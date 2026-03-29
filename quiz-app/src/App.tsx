@@ -1,9 +1,15 @@
 import "./App.css";
 import { useQuiz } from "./hooks/useQuiz";
+import { useProgress } from "./hooks/useProgress";
+import { ScoreChart } from "./components/ScoreChart";
+import { DomainRadar } from "./components/DomainRadar";
 import { DOMAIN_LABELS, DOMAIN_WEIGHTS, SCENARIO_LABELS } from "./types";
 import type { Domain, Scenario } from "./types";
 
 function App() {
+  const { stats, recordAnswer, getSmartReviewQuestions, clearProgress } =
+    useProgress();
+
   const {
     currentQuestion,
     activeQuestions,
@@ -19,19 +25,20 @@ function App() {
     resetQuiz,
     clearHistory,
     state,
-  } = useQuiz();
+  } = useQuiz(recordAnswer);
 
   const inQuiz = activeQuestions.length > 0 && !isComplete;
   const domains = Object.keys(DOMAIN_LABELS) as Domain[];
   const scenarios = Object.keys(SCENARIO_LABELS) as Scenario[];
 
+  // Results screen
   if (isComplete && results) {
     const pct = Math.round((results.correct / results.total) * 100);
     const passed = pct >= 72;
     return (
       <div className="app">
         <header>
-          <div className="logo">ANTHROPIC</div>
+          <button className="logo" onClick={resetQuiz}>ANTHROPIC</button>
           <h1>Quiz Complete</h1>
         </header>
         <main className="results">
@@ -77,6 +84,7 @@ function App() {
     );
   }
 
+  // Active quiz screen
   if (inQuiz && currentQuestion) {
     const progress = state.currentQuestionIndex + 1;
     const total = activeQuestions.length;
@@ -84,12 +92,14 @@ function App() {
     return (
       <div className="app">
         <header>
-          <div className="logo">ANTHROPIC</div>
+          <button className="logo" onClick={resetQuiz}>ANTHROPIC</button>
           <div className="quiz-meta">
             <span className="progress">
               {progress} / {total}
             </span>
-            <span className="domain-tag">{DOMAIN_LABELS[currentQuestion.domain]}</span>
+            <span className="domain-tag">
+              {DOMAIN_LABELS[currentQuestion.domain]}
+            </span>
           </div>
         </header>
         <main className="quiz">
@@ -109,7 +119,8 @@ function App() {
             {currentQuestion.shuffledOptions.map((opt, i) => {
               let cls = "option";
               if (showResult) {
-                if (i === currentQuestion.shuffledCorrectIndex) cls += " correct";
+                if (i === currentQuestion.shuffledCorrectIndex)
+                  cls += " correct";
                 else if (i === selectedAnswer) cls += " wrong";
               } else if (i === selectedAnswer) {
                 cls += " selected";
@@ -157,22 +168,105 @@ function App() {
     );
   }
 
+  // Home screen
   return (
     <div className="app">
       <header className="home-header">
-        <div className="logo">ANTHROPIC</div>
+        <button className="logo" onClick={resetQuiz}>ANTHROPIC</button>
         <h1>Claude Certified Architect</h1>
         <p className="subtitle">Foundations Exam Prep</p>
       </header>
       <main className="home">
+        {/* Progress Dashboard */}
+        <section className="dashboard">
+          <div className="dashboard-stats">
+            <div className="stat-card">
+              <div className="stat-value">{stats.streakDays}</div>
+              <div className="stat-label">Day Streak</div>
+            </div>
+            <div className="stat-card">
+              <div className="stat-value">{stats.seen}</div>
+              <div className="stat-label">Seen</div>
+            </div>
+            <div className="stat-card">
+              <div className="stat-value accent">{stats.mastered}</div>
+              <div className="stat-label">Mastered</div>
+            </div>
+            <div className="stat-card">
+              <div className="stat-value warn">{stats.weak}</div>
+              <div className="stat-label">Weak</div>
+            </div>
+            <div className="stat-card">
+              <div className="stat-value">{stats.unseen}</div>
+              <div className="stat-label">Unseen</div>
+            </div>
+          </div>
+
+          <div className="domain-mastery">
+            <h3>Domain Mastery</h3>
+            {domains.map((d) => {
+              const ds = stats.domainStats[d];
+              const masteryPct =
+                ds.total > 0 ? Math.round((ds.mastered / ds.total) * 100) : 0;
+              const seenPct =
+                ds.total > 0 ? Math.round((ds.seen / ds.total) * 100) : 0;
+              return (
+                <div key={d} className="mastery-row">
+                  <div className="mastery-label">
+                    {DOMAIN_LABELS[d].replace(/^Domain \d: /, "")}
+                  </div>
+                  <div className="mastery-bar-container">
+                    <div
+                      className="mastery-bar seen"
+                      style={{ width: `${seenPct}%` }}
+                    />
+                    <div
+                      className="mastery-bar mastered"
+                      style={{ width: `${masteryPct}%` }}
+                    />
+                  </div>
+                  <div className="mastery-nums">
+                    {ds.mastered}/{ds.total}
+                  </div>
+                </div>
+              );
+            })}
+            {/* Charts */}
+            <div className="charts-row">
+              <DomainRadar domainStats={stats.domainStats} />
+              <ScoreChart history={history} />
+            </div>
+
+            <div className="mastery-legend">
+              <span className="legend-item">
+                <span className="legend-dot mastered" /> Mastered (2+ correct streak)
+              </span>
+              <span className="legend-item">
+                <span className="legend-dot seen" /> Seen
+              </span>
+            </div>
+          </div>
+        </section>
+
+        {/* Study Modes */}
         <section className="mode-section">
           <h2>Study Modes</h2>
           <div className="mode-grid">
+            <button
+              className="mode-card smart"
+              onClick={() => {
+                const ordered = getSmartReviewQuestions().slice(0, 30);
+                startQuiz("review", undefined, undefined, ordered);
+              }}
+            >
+              <div className="mode-title">Smart Review</div>
+              <div className="mode-desc">
+                Prioritizes unseen, weak, and stale questions
+              </div>
+            </button>
             <button className="mode-card" onClick={() => startQuiz("all")}>
               <div className="mode-title">All Questions</div>
-              <div className="mode-desc">
-                Full question bank, randomized
-              </div>
+              <div className="mode-desc">Full question bank, randomized</div>
             </button>
             <button className="mode-card" onClick={() => startQuiz("exam")}>
               <div className="mode-title">Practice Exam</div>
@@ -181,9 +275,9 @@ function App() {
               </div>
             </button>
             <button className="mode-card" onClick={() => startQuiz("review")}>
-              <div className="mode-title">Weak Areas Review</div>
+              <div className="mode-title">Weak Domains</div>
               <div className="mode-desc">
-                Focus on domains where you scored {"<"}70%
+                Domains where you scored {"<"}70%
               </div>
             </button>
           </div>
@@ -192,16 +286,27 @@ function App() {
         <section className="mode-section">
           <h2>By Domain</h2>
           <div className="mode-grid">
-            {domains.map((d) => (
-              <button
-                key={d}
-                className="mode-card domain-card"
-                onClick={() => startQuiz("domain", d)}
-              >
-                <div className="mode-title">{DOMAIN_LABELS[d]}</div>
-                <div className="mode-desc">{DOMAIN_WEIGHTS[d]}% of exam</div>
-              </button>
-            ))}
+            {domains.map((d) => {
+              const ds = stats.domainStats[d];
+              return (
+                <button
+                  key={d}
+                  className="mode-card domain-card"
+                  onClick={() => startQuiz("domain", d)}
+                >
+                  <div className="mode-title">{DOMAIN_LABELS[d]}</div>
+                  <div className="mode-desc">
+                    {DOMAIN_WEIGHTS[d]}% of exam
+                    {ds.seen > 0 && (
+                      <span className="mode-progress">
+                        {" "}
+                        / {ds.mastered}/{ds.total} mastered
+                      </span>
+                    )}
+                  </div>
+                </button>
+              );
+            })}
           </div>
         </section>
 
@@ -223,13 +328,13 @@ function App() {
         {history.length > 0 && (
           <section className="mode-section">
             <h2>
-              History
+              Session History
               <button className="btn-link" onClick={clearHistory}>
                 Clear
               </button>
             </h2>
             <div className="history-list">
-              {[...history].reverse().map((h, i) => {
+              {[...history].reverse().slice(0, 10).map((h, i) => {
                 const pct = Math.round((h.correct / h.total) * 100);
                 return (
                   <div key={i} className="history-item">
@@ -237,7 +342,9 @@ function App() {
                       {new Date(h.date).toLocaleDateString()}
                     </span>
                     <span className="history-mode">{h.mode}</span>
-                    <span className={`history-score ${pct >= 72 ? "pass" : "fail"}`}>
+                    <span
+                      className={`history-score ${pct >= 72 ? "pass" : "fail"}`}
+                    >
                       {pct}% ({h.correct}/{h.total})
                     </span>
                   </div>
@@ -247,14 +354,30 @@ function App() {
           </section>
         )}
 
+        <div className="home-footer">
+          <button
+            className="btn-link danger"
+            onClick={() => {
+              clearHistory();
+              clearProgress();
+            }}
+          >
+            Reset All Progress
+          </button>
+        </div>
+
         <section className="exam-info">
           <h2>Exam Details</h2>
           <ul>
-            <li>All questions are multiple choice (1 correct, 3 distractors)</li>
+            <li>
+              All questions are multiple choice (1 correct, 3 distractors)
+            </li>
             <li>Scaled score 100-1,000; passing score is 720</li>
             <li>No penalty for guessing</li>
             <li>4 scenarios selected from 6 possible</li>
-            <li>Scenario-based questions grounded in realistic production contexts</li>
+            <li>
+              Scenario-based questions grounded in realistic production contexts
+            </li>
           </ul>
         </section>
       </main>

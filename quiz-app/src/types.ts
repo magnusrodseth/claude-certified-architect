@@ -72,3 +72,13 @@ export interface QuizHistory {
   correct: number;
   domainScores: Record<Domain, { total: number; correct: number }>;
 }
+
+export interface QuestionRecord {
+  attempts: { correct: boolean; date: number }[];
+  streak: number; // consecutive correct answers (reset on wrong)
+}
+
+export interface UserProgress {
+  questionRecords: Record<string, QuestionRecord>;
+  studyDays: string[]; // ISO date strings for streak tracking
+}

@@ -2,6 +2,7 @@ import { useState, useCallback, useMemo } from "react";
 import { questions } from "../questions";
 import type {
   Domain,
+  Question,
   Scenario,
   QuizState,
   QuizHistory,
@@ -31,7 +32,7 @@ function shuffle<T>(arr: T[]): T[] {
   return a;
 }
 
-function shuffleQuestionOptions(q: typeof questions[number]): ShuffledQuestion {
+function shuffleQuestionOptions(q: Question): ShuffledQuestion {
   const indices = [0, 1, 2, 3];
   const shuffled = shuffle(indices);
   return {
@@ -42,7 +43,7 @@ function shuffleQuestionOptions(q: typeof questions[number]): ShuffledQuestion {
   };
 }
 
-export function useQuiz() {
+export function useQuiz(onAnswer?: (questionId: string, correct: boolean) => void) {
   const [state, setState] = useState<QuizState>({
     currentQuestionIndex: 0,
     answers: {},
@@ -58,10 +59,13 @@ export function useQuiz() {
     (
       mode: QuizState["mode"],
       domain?: Domain,
-      scenario?: Scenario
+      scenario?: Scenario,
+      customQuestions?: Question[]
     ) => {
-      let filtered: typeof questions;
-      if (mode === "domain" && domain) {
+      let filtered: Question[];
+      if (customQuestions) {
+        filtered = customQuestions;
+      } else if (mode === "domain" && domain) {
         filtered = questions.filter((q) => q.domain === domain);
       } else if (mode === "scenario" && scenario) {
         filtered = questions.filter((q) => q.scenario === scenario);
@@ -82,7 +86,7 @@ export function useQuiz() {
       } else {
         filtered = [...questions];
       }
-      const shuffled = shuffle(filtered).map(shuffleQuestionOptions);
+      const shuffled = (customQuestions ? filtered : shuffle(filtered)).map(shuffleQuestionOptions);
       setActiveQuestions(shuffled);
       setState({
         currentQuestionIndex: 0,
@@ -110,8 +114,10 @@ export function useQuiz() {
         ...s,
         answers: { ...s.answers, [currentQuestion.id]: index },
       }));
+      const correct = index === currentQuestion.shuffledCorrectIndex;
+      onAnswer?.(currentQuestion.id, correct);
     },
-    [currentQuestion]
+    [currentQuestion, onAnswer]
   );
 
   const nextQuestion = useCallback(() => {
