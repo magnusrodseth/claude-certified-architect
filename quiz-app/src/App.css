@@ -727,6 +727,36 @@ h1 {
   background: #444;
 }
 
+/* Resume banner */
+.resume-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem 1.25rem;
+  background: rgba(217, 119, 87, 0.08);
+  border: 1px solid var(--accent);
+  border-radius: var(--radius);
+}
+
+.resume-title {
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+
+.resume-detail {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  margin-top: 0.15rem;
+  text-transform: capitalize;
+}
+
+.resume-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
 /* Smart review card highlight */
 .mode-card.smart {
   border-color: var(--accent);

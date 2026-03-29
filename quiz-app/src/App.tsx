@@ -1,3 +1,4 @@
+import { useState } from "react";
 import "./App.css";
 import { useQuiz } from "./hooks/useQuiz";
 import { useProgress } from "./hooks/useProgress";
@@ -7,6 +8,7 @@ import { DOMAIN_LABELS, DOMAIN_WEIGHTS, SCENARIO_LABELS } from "./types";
 import type { Domain, Scenario } from "./types";
 
 function App() {
+  const [view, setView] = useState<"home" | "quiz">("home");
   const { stats, recordAnswer, getSmartReviewQuestions, clearProgress } =
     useProgress();
 
@@ -18,16 +20,27 @@ function App() {
     history,
     results,
     isComplete,
-    startQuiz,
+    startQuiz: rawStartQuiz,
     answerQuestion,
     nextQuestion,
     toggleFlag,
-    resetQuiz,
+    resetQuiz: rawResetQuiz,
     clearHistory,
+    hasActiveSession,
     state,
   } = useQuiz(recordAnswer);
 
-  const inQuiz = activeQuestions.length > 0 && !isComplete;
+  const startQuiz = (...args: Parameters<typeof rawStartQuiz>) => {
+    rawStartQuiz(...args);
+    setView("quiz");
+  };
+
+  const resetQuiz = () => {
+    rawResetQuiz();
+    setView("home");
+  };
+
+  const inQuiz = view === "quiz" && activeQuestions.length > 0 && !isComplete;
   const domains = Object.keys(DOMAIN_LABELS) as Domain[];
   const scenarios = Object.keys(SCENARIO_LABELS) as Scenario[];
 
@@ -38,7 +51,7 @@ function App() {
     return (
       <div className="app">
         <header>
-          <button className="logo" onClick={resetQuiz}>ANTHROPIC</button>
+          <button className="logo" onClick={() => setView("home")}>ANTHROPIC</button>
           <h1>Quiz Complete</h1>
         </header>
         <main className="results">
@@ -92,7 +105,7 @@ function App() {
     return (
       <div className="app">
         <header>
-          <button className="logo" onClick={resetQuiz}>ANTHROPIC</button>
+          <button className="logo" onClick={() => setView("home")}>ANTHROPIC</button>
           <div className="quiz-meta">
             <span className="progress">
               {progress} / {total}
@@ -172,7 +185,7 @@ function App() {
   return (
     <div className="app">
       <header className="home-header">
-        <button className="logo" onClick={resetQuiz}>ANTHROPIC</button>
+        <button className="logo" onClick={() => setView("home")}>ANTHROPIC</button>
         <h1>Claude Certified Architect</h1>
         <p className="subtitle">Foundations Exam Prep</p>
       </header>
@@ -247,6 +260,27 @@ function App() {
             </div>
           </div>
         </section>
+
+        {/* Resume Banner */}
+        {hasActiveSession && view === "home" && (
+          <section className="resume-banner">
+            <div className="resume-content">
+              <div className="resume-title">Quiz in Progress</div>
+              <div className="resume-detail">
+                {state.mode} / Question {state.currentQuestionIndex + 1} of {activeQuestions.length}
+                {" "}({Object.keys(state.answers).length} answered)
+              </div>
+            </div>
+            <div className="resume-actions">
+              <button className="btn primary" onClick={() => setView("quiz")}>
+                Resume
+              </button>
+              <button className="btn" onClick={resetQuiz}>
+                Abandon
+              </button>
+            </div>
+          </section>
+        )}
 
         {/* Study Modes */}
         <section className="mode-section">

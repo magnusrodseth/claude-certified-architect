@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo } from "react";
+import { useState, useCallback, useMemo, useEffect } from "react";
 import { questions } from "../questions";
 import type {
   Domain,
@@ -10,6 +10,12 @@ import type {
 } from "../types";
 
 const HISTORY_KEY = "claude-cert-history";
+const SESSION_KEY = "claude-cert-session";
+
+interface SerializedSession {
+  state: Omit<QuizState, "flagged"> & { flagged: string[] };
+  activeQuestions: ShuffledQuestion[];
+}
 
 function loadHistory(): QuizHistory[] {
   try {
@@ -21,6 +27,37 @@ function loadHistory(): QuizHistory[] {
 
 function saveHistory(history: QuizHistory[]) {
   localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
+}
+
+function loadSession(): { state: QuizState; activeQuestions: ShuffledQuestion[] } | null {
+  try {
+    const raw = localStorage.getItem(SESSION_KEY);
+    if (!raw) return null;
+    const parsed: SerializedSession = JSON.parse(raw);
+    if (!parsed.activeQuestions?.length) return null;
+    return {
+      state: { ...parsed.state, flagged: new Set(parsed.state.flagged) },
+      activeQuestions: parsed.activeQuestions,
+    };
+  } catch {
+    return null;
+  }
+}
+
+function saveSession(state: QuizState, activeQuestions: ShuffledQuestion[]) {
+  if (activeQuestions.length === 0) {
+    localStorage.removeItem(SESSION_KEY);
+    return;
+  }
+  const serialized: SerializedSession = {
+    state: { ...state, flagged: [...state.flagged] },
+    activeQuestions,
+  };
+  localStorage.setItem(SESSION_KEY, JSON.stringify(serialized));
+}
+
+function clearSession() {
+  localStorage.removeItem(SESSION_KEY);
 }
 
 function shuffle<T>(arr: T[]): T[] {
@@ -37,23 +74,41 @@ function shuffleQuestionOptions(q: Question): ShuffledQuestion {
   const shuffled = shuffle(indices);
   return {
     ...q,
-    shuffledOptions: shuffled.map((i) => q.options[i]) as [string, string, string, string],
+    shuffledOptions: shuffled.map((i) => q.options[i]) as [
+      string,
+      string,
+      string,
+      string,
+    ],
     shuffledCorrectIndex: shuffled.indexOf(q.correctIndex),
     shuffleMap: shuffled,
   };
 }
 
-export function useQuiz(onAnswer?: (questionId: string, correct: boolean) => void) {
-  const [state, setState] = useState<QuizState>({
-    currentQuestionIndex: 0,
-    answers: {},
-    flagged: new Set(),
-    mode: "all",
-  });
-  const [activeQuestions, setActiveQuestions] = useState<ShuffledQuestion[]>([]);
+const defaultState: QuizState = {
+  currentQuestionIndex: 0,
+  answers: {},
+  flagged: new Set(),
+  mode: "all",
+};
+
+export function useQuiz(
+  onAnswer?: (questionId: string, correct: boolean) => void
+) {
+  const saved = loadSession();
+
+  const [state, setState] = useState<QuizState>(saved?.state ?? defaultState);
+  const [activeQuestions, setActiveQuestions] = useState<ShuffledQuestion[]>(
+    saved?.activeQuestions ?? []
+  );
   const [showResult, setShowResult] = useState(false);
   const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
   const [history, setHistory] = useState<QuizHistory[]>(loadHistory);
+
+  // Persist session on every state/question change
+  useEffect(() => {
+    saveSession(state, activeQuestions);
+  }, [state, activeQuestions]);
 
   const startQuiz = useCallback(
     (
@@ -72,12 +127,11 @@ export function useQuiz(onAnswer?: (questionId: string, correct: boolean) => voi
       } else if (mode === "exam") {
         filtered = shuffle(questions).slice(0, 40);
       } else if (mode === "review") {
-        const missed = loadHistory()
-          .flatMap((h) =>
-            Object.entries(h.domainScores)
-              .filter(([, v]) => v.total > 0 && v.correct / v.total < 0.7)
-              .map(([d]) => d as Domain)
-          );
+        const missed = loadHistory().flatMap((h) =>
+          Object.entries(h.domainScores)
+            .filter(([, v]) => v.total > 0 && v.correct / v.total < 0.7)
+            .map(([d]) => d as Domain)
+        );
         const weakDomains = [...new Set(missed)];
         filtered =
           weakDomains.length > 0
@@ -86,7 +140,9 @@ export function useQuiz(onAnswer?: (questionId: string, correct: boolean) => voi
       } else {
         filtered = [...questions];
       }
-      const shuffled = (customQuestions ? filtered : shuffle(filtered)).map(shuffleQuestionOptions);
+      const shuffled = (customQuestions ? filtered : shuffle(filtered)).map(
+        shuffleQuestionOptions
+      );
       setActiveQuestions(shuffled);
       setState({
         currentQuestionIndex: 0,
@@ -170,25 +226,24 @@ export function useQuiz(onAnswer?: (questionId: string, correct: boolean) => voi
     const updated = [...history, entry];
     saveHistory(updated);
     setHistory(updated);
+    clearSession();
     return { correct, total: activeQuestions.length, domainScores };
   }, [isComplete, activeQuestions, state.answers, state.mode, history]);
 
   const resetQuiz = useCallback(() => {
     setActiveQuestions([]);
-    setState({
-      currentQuestionIndex: 0,
-      answers: {},
-      flagged: new Set(),
-      mode: "all",
-    });
+    setState(defaultState);
     setShowResult(false);
     setSelectedAnswer(null);
+    clearSession();
   }, []);
 
   const clearHistory = useCallback(() => {
     localStorage.removeItem(HISTORY_KEY);
     setHistory([]);
   }, []);
+
+  const hasActiveSession = activeQuestions.length > 0 && !isComplete;
 
   return {
     state,
@@ -199,6 +254,7 @@ export function useQuiz(onAnswer?: (questionId: string, correct: boolean) => voi
     history,
     results,
     isComplete,
+    hasActiveSession,
     startQuiz,
     answerQuestion,
     nextQuestion,
