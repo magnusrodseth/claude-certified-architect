@@ -1,3 +1,13 @@
+import {
+  ResponsiveContainer,
+  AreaChart,
+  Area,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ReferenceLine,
+} from "recharts";
 import type { QuizHistory } from "../types";
 
 interface Props {
@@ -10,104 +20,92 @@ export function ScoreChart({ history }: Props) {
       <div className="score-chart">
         <h3>Score Trend</h3>
         <div className="chart-placeholder">
-          Complete {2 - history.length} more {history.length === 1 ? "quiz" : "quizzes"} to see your score trend over time
+          Complete {2 - history.length} more{" "}
+          {history.length === 1 ? "quiz" : "quizzes"} to see your score trend
         </div>
       </div>
     );
   }
 
-  const recent = history.slice(-20);
-  const points = recent.map((h, i) => ({
-    x: i,
-    y: Math.round((h.correct / h.total) * 100),
-    date: new Date(h.date).toLocaleDateString(),
+  const data = history.slice(-20).map((h) => ({
+    date: new Date(h.date).toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+    }),
+    score: Math.round((h.correct / h.total) * 100),
     mode: h.mode,
   }));
-
-  const w = 100;
-  const h = 40;
-  const padX = 2;
-  const padY = 4;
-  const innerW = w - padX * 2;
-  const innerH = h - padY * 2;
-  const maxX = points.length - 1;
-
-  const toSvg = (i: number, y: number) => ({
-    x: padX + (maxX > 0 ? (i / maxX) * innerW : innerW / 2),
-    y: padY + innerH - (y / 100) * innerH,
-  });
-
-  const passY = toSvg(0, 72).y;
-
-  const pathPoints = points.map((p, i) => {
-    const { x, y } = toSvg(i, p.y);
-    return `${i === 0 ? "M" : "L"}${x},${y}`;
-  });
-  const linePath = pathPoints.join(" ");
-
-  const areaPath =
-    linePath +
-    ` L${toSvg(maxX, 0).x},${padY + innerH} L${toSvg(0, 0).x},${padY + innerH} Z`;
 
   return (
     <div className="score-chart">
       <h3>Score Trend</h3>
-      <svg viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="none">
-        {/* Pass line */}
-        <line
-          x1={padX}
-          y1={passY}
-          x2={w - padX}
-          y2={passY}
-          stroke="#444"
-          strokeWidth="0.3"
-          strokeDasharray="1,1"
-        />
-        <text
-          x={w - padX}
-          y={passY - 0.8}
-          textAnchor="end"
-          fill="#555"
-          fontSize="2.5"
-        >
-          72%
-        </text>
-
-        {/* Area fill */}
-        <path d={areaPath} fill="rgba(217, 119, 87, 0.1)" />
-
-        {/* Line */}
-        <path
-          d={linePath}
-          fill="none"
-          stroke="var(--accent)"
-          strokeWidth="0.6"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
-
-        {/* Dots */}
-        {points.map((p, i) => {
-          const { x, y } = toSvg(i, p.y);
-          return (
-            <circle
-              key={i}
-              cx={x}
-              cy={y}
-              r="0.8"
-              fill={p.y >= 72 ? "var(--green)" : "var(--red)"}
-            >
-              <title>
-                {p.date} ({p.mode}): {p.y}%
-              </title>
-            </circle>
-          );
-        })}
-      </svg>
-      <div className="chart-labels">
-        <span>{points[0].date}</span>
-        <span>{points[points.length - 1].date}</span>
-      </div>
+      <ResponsiveContainer width="100%" height={180}>
+        <AreaChart data={data} margin={{ top: 8, right: 8, left: -20, bottom: 0 }}>
+          <defs>
+            <linearGradient id="scoreGradient" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="5%" stopColor="#d97757" stopOpacity={0.3} />
+              <stop offset="95%" stopColor="#d97757" stopOpacity={0} />
+            </linearGradient>
+          </defs>
+          <CartesianGrid strokeDasharray="3 3" stroke="#333" vertical={false} />
+          <XAxis
+            dataKey="date"
+            tick={{ fill: "#a8a29e", fontSize: 11 }}
+            tickLine={false}
+            axisLine={false}
+          />
+          <YAxis
+            domain={[0, 100]}
+            tick={{ fill: "#a8a29e", fontSize: 11 }}
+            tickLine={false}
+            axisLine={false}
+            tickFormatter={(v) => `${v}%`}
+          />
+          <Tooltip
+            contentStyle={{
+              background: "#242424",
+              border: "1px solid #333",
+              borderRadius: 8,
+              fontSize: 12,
+              color: "#f5f5f4",
+            }}
+            formatter={(value: number) => [`${value}%`, "Score"]}
+          />
+          <ReferenceLine
+            y={72}
+            stroke="#555"
+            strokeDasharray="4 4"
+            label={{
+              value: "Pass: 72%",
+              position: "right",
+              fill: "#555",
+              fontSize: 10,
+            }}
+          />
+          <Area
+            type="monotone"
+            dataKey="score"
+            stroke="#d97757"
+            strokeWidth={2}
+            fill="url(#scoreGradient)"
+            dot={(props) => {
+              const { cx, cy, payload } = props;
+              return (
+                <circle
+                  key={`${cx}-${cy}`}
+                  cx={cx}
+                  cy={cy}
+                  r={4}
+                  fill={payload.score >= 72 ? "#4ade80" : "#f87171"}
+                  stroke="#1a1a1a"
+                  strokeWidth={2}
+                />
+              );
+            }}
+            activeDot={{ r: 6, stroke: "#d97757", strokeWidth: 2 }}
+          />
+        </AreaChart>
+      </ResponsiveContainer>
     </div>
   );
 }

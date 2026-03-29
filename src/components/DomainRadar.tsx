@@ -1,3 +1,11 @@
+import {
+  ResponsiveContainer,
+  RadarChart,
+  PolarGrid,
+  PolarAngleAxis,
+  Radar,
+  Tooltip,
+} from "recharts";
 import type { Domain } from "../types";
 
 interface DomainStat {
@@ -20,105 +28,54 @@ const LABELS: { key: Domain; short: string }[] = [
 ];
 
 export function DomainRadar({ domainStats }: Props) {
-  const cx = 50;
-  const cy = 50;
-  const r = 35;
-  const n = LABELS.length;
-  const angleStep = (2 * Math.PI) / n;
-  const startAngle = -Math.PI / 2;
-
-  const getPoint = (i: number, value: number) => {
-    const angle = startAngle + i * angleStep;
-    const dist = (value / 100) * r;
-    return {
-      x: cx + dist * Math.cos(angle),
-      y: cy + dist * Math.sin(angle),
-    };
-  };
-
-  const values = LABELS.map(({ key }) => {
+  const data = LABELS.map(({ key, short }) => {
     const ds = domainStats[key];
-    return ds.total > 0 ? Math.round((ds.mastered / ds.total) * 100) : 0;
-  });
-
-  // Grid rings
-  const rings = [25, 50, 75, 100];
-  const gridPaths = rings.map((pct) => {
-    const pts = Array.from({ length: n }, (_, i) => getPoint(i, pct));
-    return pts.map((p, i) => `${i === 0 ? "M" : "L"}${p.x},${p.y}`).join(" ") + " Z";
-  });
-
-  // Axes
-  const axes = Array.from({ length: n }, (_, i) => getPoint(i, 100));
-
-  // Data polygon
-  const dataPts = values.map((v, i) => getPoint(i, v));
-  const dataPath =
-    dataPts.map((p, i) => `${i === 0 ? "M" : "L"}${p.x},${p.y}`).join(" ") + " Z";
-
-  // Label positions
-  const labelPts = LABELS.map((_, i) => {
-    const angle = startAngle + i * angleStep;
-    const dist = r + 10;
     return {
-      x: cx + dist * Math.cos(angle),
-      y: cy + dist * Math.sin(angle),
+      domain: short,
+      mastery: ds.total > 0 ? Math.round((ds.mastered / ds.total) * 100) : 0,
+      seen: ds.total > 0 ? Math.round((ds.seen / ds.total) * 100) : 0,
     };
   });
 
   return (
     <div className="domain-radar">
       <h3>Domain Mastery Radar</h3>
-      <svg viewBox="0 0 100 100">
-        {/* Grid */}
-        {gridPaths.map((d, i) => (
-          <path key={i} d={d} fill="none" stroke="#333" strokeWidth="0.3" />
-        ))}
-
-        {/* Axes */}
-        {axes.map((p, i) => (
-          <line
-            key={i}
-            x1={cx}
-            y1={cy}
-            x2={p.x}
-            y2={p.y}
-            stroke="#333"
-            strokeWidth="0.2"
+      <ResponsiveContainer width="100%" height={220}>
+        <RadarChart data={data} cx="50%" cy="50%" outerRadius="70%">
+          <PolarGrid stroke="#333" />
+          <PolarAngleAxis
+            dataKey="domain"
+            tick={{ fill: "#a8a29e", fontSize: 11 }}
           />
-        ))}
-
-        {/* Data area */}
-        <path d={dataPath} fill="rgba(217, 119, 87, 0.2)" stroke="var(--accent)" strokeWidth="0.6" />
-
-        {/* Data points */}
-        {dataPts.map((p, i) => (
-          <circle
-            key={i}
-            cx={p.x}
-            cy={p.y}
-            r="1.2"
-            fill="var(--accent)"
-          >
-            <title>{LABELS[i].short}: {values[i]}%</title>
-          </circle>
-        ))}
-
-        {/* Labels */}
-        {labelPts.map((p, i) => (
-          <text
-            key={i}
-            x={p.x}
-            y={p.y}
-            textAnchor="middle"
-            dominantBaseline="central"
-            fill="var(--text-muted)"
-            fontSize="3"
-          >
-            {LABELS[i].short}
-          </text>
-        ))}
-      </svg>
+          <Tooltip
+            contentStyle={{
+              background: "#242424",
+              border: "1px solid #333",
+              borderRadius: 8,
+              fontSize: 12,
+              color: "#f5f5f4",
+            }}
+            formatter={(value: number, name: string) => [
+              `${value}%`,
+              name === "mastery" ? "Mastered" : "Seen",
+            ]}
+          />
+          <Radar
+            name="seen"
+            dataKey="seen"
+            stroke="#555"
+            fill="#444"
+            fillOpacity={0.3}
+          />
+          <Radar
+            name="mastery"
+            dataKey="mastery"
+            stroke="#d97757"
+            fill="#d97757"
+            fillOpacity={0.3}
+          />
+        </RadarChart>
+      </ResponsiveContainer>
     </div>
   );
 }
