@@ -55,7 +55,7 @@ export function DomainRadar({ domainStats }: Props) {
               fontSize: 12,
               color: "#f5f5f4",
             }}
-            formatter={(value: number, name: string) => [
+            formatter={(value, name) => [
               `${value}%`,
               name === "mastery" ? "Mastered" : "Seen",
             ]}

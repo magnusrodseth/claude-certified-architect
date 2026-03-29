@@ -69,7 +69,7 @@ export function ScoreChart({ history }: Props) {
               fontSize: 12,
               color: "#f5f5f4",
             }}
-            formatter={(value: number) => [`${value}%`, "Score"]}
+            formatter={(value) => [`${value}%`, "Score"]}
           />
           <ReferenceLine
             y={72}
