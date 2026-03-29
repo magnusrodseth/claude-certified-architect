@@ -668,6 +668,21 @@ h1 {
   min-height: 80px;
 }
 
+.chart-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  min-height: 80px;
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  text-align: center;
+  padding: 1rem;
+  background: var(--bg);
+  border-radius: var(--radius);
+  border: 1px dashed var(--border);
+}
+
 .chart-labels {
   display: flex;
   justify-content: space-between;

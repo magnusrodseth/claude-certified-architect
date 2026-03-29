@@ -5,7 +5,16 @@ interface Props {
 }
 
 export function ScoreChart({ history }: Props) {
-  if (history.length < 2) return null;
+  if (history.length < 2) {
+    return (
+      <div className="score-chart">
+        <h3>Score Trend</h3>
+        <div className="chart-placeholder">
+          Complete {2 - history.length} more {history.length === 1 ? "quiz" : "quizzes"} to see your score trend over time
+        </div>
+      </div>
+    );
+  }
 
   const recent = history.slice(-20);
   const points = recent.map((h, i) => ({
