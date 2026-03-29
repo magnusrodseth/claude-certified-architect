@@ -53,6 +53,26 @@ header {
   flex-direction: column;
   text-align: center;
   padding-bottom: 2rem;
+  position: relative;
+}
+
+.social-links {
+  position: absolute;
+  top: 0;
+  right: 0;
+  display: flex;
+  gap: 0.6rem;
+}
+
+.social-links a {
+  color: var(--text-muted);
+  transition: color 0.15s ease;
+  display: flex;
+  align-items: center;
+}
+
+.social-links a:hover {
+  color: var(--text);
 }
 
 .logo {
