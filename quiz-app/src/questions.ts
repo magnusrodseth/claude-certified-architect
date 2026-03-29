@@ -538,10 +538,10 @@ export const questions: Question[] = [
     question:
       "A new team member reports that Claude Code is not following project conventions. The instructions are in ~/.claude/CLAUDE.md. What is the likely issue?",
     options: [
-      "The CLAUDE.md file is corrupted and must be regenerated from scratch",
-      "User-level CLAUDE.md applies only to that user, not shared via VCS",
-      "The file needs to be named claude.md in all lowercase letters to work",
-      "Claude Code only reads CLAUDE.md on first launch, not in later sessions",
+      "The CLAUDE.md file must be re-generated after each dependency update",
+      "User-level CLAUDE.md applies to that user only, not shared via VCS",
+      "CLAUDE.md requires a YAML frontmatter block with a valid schema version",
+      "Claude Code caches CLAUDE.md at startup and ignores later file changes",
     ],
     correctIndex: 1,
     explanation:
@@ -553,10 +553,10 @@ export const questions: Question[] = [
     question:
       "What is the @import syntax used for in CLAUDE.md files?",
     options: [
-      "Importing npm packages into the Claude Code runtime environment",
+      "Importing shared ESLint or Prettier rule configs into the session",
       "Referencing external files to keep CLAUDE.md modular and organized",
-      "Importing environment variables from .env files into the session",
-      "Importing custom tool definitions from a separate configuration file",
+      "Loading environment variables from dotenv files into Claude context",
+      "Pulling remote tool schemas from a JSON registry into the session",
     ],
     correctIndex: 1,
     explanation:
@@ -568,10 +568,10 @@ export const questions: Question[] = [
     question:
       "What is the advantage of .claude/rules/ files with YAML frontmatter paths fields over directory-level CLAUDE.md files?",
     options: [
-      "Rules files load faster due to their optimized parsing and caching",
+      "Rules files are parsed faster because they use an optimized loader",
       "Rules with globs apply by file type across all directories at once",
-      "Rules files support more formatting options like tables and diagrams",
-      "There is no real advantage; rules and CLAUDE.md are fully equivalent",
+      "Rules files support structured YAML blocks that CLAUDE.md cannot use",
+      "There is no practical advantage; both mechanisms are fully equivalent",
     ],
     correctIndex: 1,
     explanation:
@@ -586,10 +586,10 @@ export const questions: Question[] = [
     question:
       "What is the difference between project-scoped commands in .claude/commands/ and user-scoped commands in ~/.claude/commands/?",
     options: [
-      "There is no difference; both scopes function identically in practice",
-      "Project-scoped are shared via version control; user-scoped are personal",
-      "User-scoped commands always have higher execution priority than project",
-      "Project-scoped commands run faster due to local caching optimizations",
+      "No functional difference exists; both scopes behave the same at runtime",
+      "Project commands are shared via VCS; user commands stay personal only",
+      "User-scoped commands always take higher execution priority than project",
+      "Project-scoped commands are cached locally, making execution much faster",
     ],
     correctIndex: 1,
     explanation:
@@ -602,9 +602,9 @@ export const questions: Question[] = [
       "What does the context: fork frontmatter option do in a SKILL.md file?",
     options: [
       "Creates a Git fork of the repository for isolated branch development",
-      "Runs the skill in an isolated sub-agent to keep main context clean",
-      "Splits the skill into multiple parallel execution paths at runtime",
-      "Forks the current terminal session into a new background shell tab",
+      "Runs the skill in a sub-agent, keeping the main context window clean",
+      "Splits the skill into multiple parallel execution threads at runtime",
+      "Forks the current terminal session into a new background process tab",
     ],
     correctIndex: 1,
     explanation:
@@ -616,10 +616,10 @@ export const questions: Question[] = [
     question:
       "How does the allowed-tools frontmatter in SKILL.md help with safety?",
     options: [
-      "It speeds up tool execution by pre-loading only the needed tool schemas",
-      "It restricts which tools the skill can use, preventing destructive ops",
-      "It defines brand new custom tools that become available to the skill",
-      "It grants the skill access to all tools without any permission prompts",
+      "It pre-loads only the listed tool schemas, speeding up execution time",
+      "It restricts which tools the skill can use, blocking destructive ops",
+      "It registers new custom tools that only exist within the skill scope",
+      "It auto-approves all listed tools so no permission prompts are shown",
     ],
     correctIndex: 1,
     explanation:
@@ -633,10 +633,10 @@ export const questions: Question[] = [
     question:
       'A .claude/rules/terraform.md file has frontmatter paths: ["terraform/**/*"]. When does this rule load?',
     options: [
-      "On every Claude Code session start, regardless of which files are open",
-      "Only when editing files matching the terraform/**/* glob pattern",
-      "When the user types the /terraform slash command in the chat prompt",
-      "When the Terraform CLI binary is detected on the system search path",
+      "At every Claude Code session start, regardless of the files being edited",
+      "Only when editing files that match the terraform/**/* glob pattern",
+      "When the user explicitly runs the /terraform slash command in the chat",
+      "When a Terraform CLI binary is found anywhere on the system search path",
     ],
     correctIndex: 1,
     explanation:
@@ -650,10 +650,10 @@ export const questions: Question[] = [
     question:
       "When should you use plan mode instead of direct execution in Claude Code?",
     options: [
-      "For every task without exception, because it is always the safest option",
-      "For complex tasks with architectural implications or multi-file changes",
-      "Only when fixing bugs that require careful step-by-step root cause work",
-      "Never; direct execution is always better and more efficient than plans",
+      "For every task without exception, since planning always reduces errors",
+      "For complex tasks with architectural impact or multi-file refactors",
+      "Only for bug fixes that require careful, step-by-step root cause work",
+      "Never, because direct execution is faster and produces better results",
     ],
     correctIndex: 1,
     explanation:
@@ -665,10 +665,10 @@ export const questions: Question[] = [
     question:
       "What is the Explore subagent used for in Claude Code?",
     options: [
-      "Exploring the internet for relevant documentation and external examples",
-      "Isolating verbose discovery output and returning concise summaries back",
-      "Exploring different model configurations to find the optimal parameters",
-      "Running exploratory tests against the codebase to detect regressions",
+      "Browsing the web for relevant documentation and external code samples",
+      "Isolating verbose discovery work and returning concise summaries back",
+      "Testing different model configurations to find the best parameter set",
+      "Running exploratory test suites against the codebase for regressions",
     ],
     correctIndex: 1,
     explanation:
@@ -682,10 +682,10 @@ export const questions: Question[] = [
     question:
       "When prose descriptions produce inconsistent output, what is the most effective way to communicate expected transformations?",
     options: [
-      "Write much more detailed and longer prose descriptions of the format",
-      "Provide 2-3 concrete input/output examples showing expected results",
-      "Increase the temperature parameter to generate more varied attempts",
-      "Switch to a larger model that better understands natural language nuance",
+      "Write significantly longer prose descriptions with exact field names",
+      "Provide 2-3 concrete input/output examples of expected results",
+      "Raise the temperature parameter so the model explores more variations",
+      "Switch to a larger model with stronger natural language comprehension",
     ],
     correctIndex: 1,
     explanation:
@@ -697,10 +697,10 @@ export const questions: Question[] = [
     question:
       "What is the 'interview pattern' in Claude Code workflows?",
     options: [
-      "Having Claude interview job candidates by generating technical questions",
+      "Having Claude generate technical screening questions for job candidates",
       "Having Claude ask questions to surface unanticipated design concerns",
-      "A pattern for generating structured interview questions from job posts",
-      "A workflow designed to onboard new team members to the existing project",
+      "A pattern for producing structured behavioral interview question banks",
+      "A workflow for onboarding new developers to the existing codebase now",
     ],
     correctIndex: 1,
     explanation:
@@ -715,10 +715,10 @@ export const questions: Question[] = [
     question:
       "What flag must be used when running Claude Code in a CI/CD pipeline to prevent interactive input hangs?",
     options: [
-      "The --no-input flag that disables standard input handling completely",
-      "The -p (or --print) flag for non-interactive pipeline execution mode",
-      "The --ci-mode flag designed specifically for continuous integration use",
-      "The --batch flag that enables automated batch processing of all inputs",
+      "The --no-input flag that disables stdin to prevent blocking on reads",
+      "The -p (--print) flag for non-interactive single-response execution",
+      "The --ci-mode flag built specifically for continuous integration runs",
+      "The --batch flag that queues all prompts and processes them serially",
     ],
     correctIndex: 1,
     explanation:
@@ -731,10 +731,10 @@ export const questions: Question[] = [
     question:
       "How do you get machine-parseable structured output from Claude Code for automated posting as inline PR comments?",
     options: [
-      "Parse the standard text output with a regex to extract all key fields",
-      "Use --output-format json with --json-schema for structured output",
-      "Use --format=xml to produce structured XML output for CI pipelines",
-      "Redirect stdout to a JSON file and manually parse its raw contents",
+      "Parse the default text output with regex to extract structured fields",
+      "Use --output-format json with --json-schema for typed structure",
+      "Use --format=xml to produce structured XML that CI tools can parse",
+      "Pipe stdout through jq to convert the raw text into a JSON document",
     ],
     correctIndex: 1,
     explanation:
@@ -747,10 +747,10 @@ export const questions: Question[] = [
     question:
       "Why should a different Claude session review code than the one that generated it?",
     options: [
-      "The generating session runs slower due to accumulated conversation state",
-      "The generating session retains reasoning context, biasing self-review",
-      "The generating session has already used up its total token allocation",
-      "There is no measurable benefit to using a different session for review",
+      "The generating session becomes slower from accumulated context weight",
+      "The session retains its reasoning context, which biases self-review",
+      "The session has consumed its token budget and cannot process more input",
+      "There is no proven benefit; the same session reviews equally well now",
     ],
     correctIndex: 1,
     explanation:
@@ -1227,10 +1227,10 @@ export const questions: Question[] = [
     question:
       "What does the /init command do in Claude Code?",
     options: [
-      "Initializes a new Git repository with default branch and remote",
-      "Analyzes the codebase and creates a CLAUDE.md with project summary",
-      "Creates a brand new project scaffolding from a predefined template",
-      "Initializes the Claude API client with authentication credentials",
+      "Initializes a new Git repo with a default branch and remote settings",
+      "Scans the codebase and generates a CLAUDE.md with project context",
+      "Scaffolds a new project directory from a built-in starter template",
+      "Sets up the Claude API client with stored auth and token credentials",
     ],
     correctIndex: 1,
     explanation:
@@ -1242,10 +1242,10 @@ export const questions: Question[] = [
     question:
       "What are the three levels of CLAUDE.md files in Claude Code?",
     options: [
-      "Dev level, Staging level, and Production level for each environment",
-      "Project (shared via VCS), Local (personal), and User (global machine)",
-      "Public level, Private level, and Protected level for access control",
-      "Root level, Package level, and Module level following directory depth",
+      "Dev, Staging, and Production levels matching deployment environments",
+      "Project (shared via VCS), Local (personal), User (global per machine)",
+      "Public, Private, and Protected levels governing team access controls",
+      "Root, Package, and Module levels corresponding to directory hierarchy",
     ],
     correctIndex: 1,
     explanation:
@@ -1257,10 +1257,10 @@ export const questions: Question[] = [
     question:
       "What is the difference between Plan Mode and Thinking Mode in Claude Code?",
     options: [
-      "They are the same feature with different names in the documentation",
-      "Plan handles breadth with more files; Thinking handles deep reasoning",
-      "Plan Mode is for project planning; Thinking is for abstract questions",
-      "Plan Mode creates documents and specs; Thinking Mode generates code",
+      "They are identical features with different names across documentation",
+      "Plan handles breadth across files; Thinking handles deep reasoning",
+      "Plan is for high-level project planning; Thinking for abstract topics",
+      "Plan produces documents and specs; Thinking produces runnable code now",
     ],
     correctIndex: 1,
     explanation:
@@ -1272,9 +1272,9 @@ export const questions: Question[] = [
     question:
       "What do the Escape, Double Escape, and Compact commands do in Claude Code?",
     options: [
-      "Exit the program, force quit the process, and clear the entire screen",
-      "Escape stops response; Double Escape rewinds; Compact summarizes all",
-      "Cancel current operation, undo last change, and redo the last change",
+      "Exit the program, force quit the active process, and clear the screen",
+      "Escape stops response; Double Escape rewinds; Compact summarizes",
+      "Cancel the current operation, undo the last change, then redo it next",
       "Escape switches modes; Double Escape exits Claude; Compact reformats",
     ],
     correctIndex: 1,
@@ -1509,10 +1509,10 @@ export const questions: Question[] = [
     question:
       "What are the default permissions when using the Claude Code SDK, and how do you enable write operations?",
     options: [
-      "Full read and write by default with no additional setup required",
-      "Default is read-only; write needs allowTools config like 'edit'",
-      "No default permissions at all; everything must be configured first",
-      "Write-only by default; read permissions must be explicitly enabled",
+      "Full read and write permissions are granted by default with no setup",
+      "Read-only by default; write needs allowTools config like 'edit'",
+      "No permissions exist by default; every tool must be configured first",
+      "Write-only by default; read permissions require explicit enablement",
     ],
     correctIndex: 1,
     explanation:
@@ -1526,10 +1526,10 @@ export const questions: Question[] = [
     question:
       "How does Claude Code's GitHub integration work for automated code reviews?",
     options: [
-      "It monitors repository webhooks manually via a custom webhook server",
+      "It monitors repository webhooks via a manually configured webhook server",
       "It installs a GitHub app adding mention support and auto PR review",
-      "It requires building a fully custom CI/CD pipeline from the ground up",
-      "It only works with GitLab repositories, not with GitHub repositories",
+      "It requires a fully custom CI/CD pipeline built and maintained manually",
+      "It relies on GitLab-specific merge request hooks, not GitHub PR events",
     ],
     correctIndex: 1,
     explanation:
@@ -1543,10 +1543,10 @@ export const questions: Question[] = [
     question:
       "How do you safely run multiple Claude Code instances in parallel on the same codebase?",
     options: [
-      "Just run multiple terminal windows pointing to the same directory",
+      "Run multiple terminals in the same directory with no extra isolation",
       "Use Git worktrees for isolated workspaces per instance, then merge",
-      "Use Docker containers to isolate each Claude Code instance runtime",
-      "It is not possible to parallelize Claude Code across instances today",
+      "Use Docker containers to sandbox each Claude Code instance at runtime",
+      "Parallelization is unsupported; only one instance can run at a time",
     ],
     correctIndex: 1,
     explanation:
@@ -2153,8 +2153,8 @@ export const questions: Question[] = [
       "What permission configuration is required when integrating MCP servers with Claude Code in GitHub Actions?",
     options: [
       "Each MCP server tool must be individually listed in the permissions",
-      "No special permissions are needed if running inside GitHub Actions",
-      "Permissions are automatically inherited from the GitHub repo settings",
+      "No special permissions are needed when running inside GitHub Actions",
+      "Permissions are automatically inherited from the repository settings",
       "A single blanket permission covering all MCP operations is sufficient",
     ],
     correctIndex: 0,
@@ -2167,10 +2167,10 @@ export const questions: Question[] = [
     question:
       "How do you create a custom command in Claude Code that accepts runtime parameters?",
     options: [
-      "Use the @parameters decorator in the command file's YAML frontmatter",
-      "Define parameters in the settings.json global configuration section",
-      "Add command line flags when executing the command from the terminal",
-      "Include the $ARGUMENTS placeholder in the markdown command file text",
+      "Use the @parameters decorator inside the YAML frontmatter of commands",
+      "Define parameters in the settings.json global configuration file block",
+      "Pass command-line flags when invoking the command from the terminal app",
+      "Include $ARGUMENTS placeholder in the markdown command file template",
     ],
     correctIndex: 3,
     explanation:
