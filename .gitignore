@@ -3,3 +3,4 @@ dist
 .vercel
 generated_imgs
 *.local
+.env*.local
