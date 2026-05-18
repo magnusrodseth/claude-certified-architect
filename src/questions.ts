@@ -2771,4 +2771,73 @@ export const questions: Question[] = [
     explanation:
       "Context limits are absolute: a ~4k-token schema plus system prompt leaves under 196k for the document, so 180k+ inputs push the payload to the boundary where end-of-prompt attention degrades, exactly matching 'final third missing.' Schema field count causes semantic errors not positional omission (98% on short docs proves the schema is fine); lost-in-the-middle affects the middle; proportional attention is fabricated. Fix by trimming the schema or chunking.",
   },
+
+  // ============================================================
+  // Final minor-gap fills: batch sampling/resubmission (4.5),
+  // crash-recovery manifest (5.4), citation-id provenance (5.6)
+  // ============================================================
+  {
+    id: "d4-085",
+    domain: "prompt-engineering",
+    scenario: "structured-data",
+    question:
+      "You will process 50,000 legacy documents via the Batch API. A 500-document test shows 18% need 2-3 prompt refinements to extract correctly. What is the most cost-efficient scaling strategy?",
+    options: [
+      "Batch all 50,000 immediately, identify failures at scale, and resubmit them",
+      "Refine the prompt on a representative sample first, then batch all 50,000",
+      "Process all 50,000 synchronously so prompts can be refined per document",
+      "Submit incremental 5,000-document batches to learn failure modes in production",
+    ],
+    correctIndex: 1,
+    explanation:
+      "Iterative resubmissions at full scale erase the Batch API's savings. Fixing failure modes on a representative sample first maximizes first-pass success when the 50,000-document run executes. Learning prompt failures on production-sized batches (options A and D) is expensive; the synchronous API discards the 50% batch discount.",
+  },
+  {
+    id: "d4-086",
+    domain: "prompt-engineering",
+    scenario: "structured-data",
+    question:
+      "After a 10,000-document batch completes, 300 documents (3%) fail with context_length_exceeded; the result file lists each failure by custom_id. What is the most cost-effective way to process the failures?",
+    options: [
+      "Resubmit all 10,000 documents using a smaller chunk size for safety",
+      "Switch the 300 failed documents to the synchronous API instead",
+      "Extract only the 300 failures by custom_id, chunk them, resubmit as a batch",
+      "Raise the model's context-window limit and resubmit the failed documents",
+    ],
+    correctIndex: 2,
+    explanation:
+      "custom_id maps results to inputs, so isolate only the 300 failures. Because they exceeded context, chunk those specific documents and resubmit them as a new batch. Reprocessing the 9,700 successes wastes ~97% of the cost; the synchronous API costs more with no benefit here; the context limit is a fixed model constraint, not a setting.",
+  },
+  {
+    id: "d5-105",
+    domain: "context-management",
+    scenario: "multi-agent-research",
+    question:
+      "A multi-agent research pipeline crashes after processing 12 of 18 documents, with several agents partially done. How should you resume without losing fidelity or repeating completed work?",
+    options: [
+      "Run --resume directly on the crashed session and let it continue",
+      "Use fork_session from the crash point to branch the execution",
+      "Resume the session without recording which documents were partial",
+      "Write completed work to a structured checkpoint, start fresh, inject it",
+    ],
+    correctIndex: 3,
+    explanation:
+      "Tool results in a crashed session are stale and unreliable, so blindly resuming risks corruption or rework. The robust pattern is exporting completed and partial state to a durable structured checkpoint (a manifest), starting a new session, and injecting that checkpoint with explicit done/partial/pending status. fork_session is for divergent exploration, not failure recovery.",
+  },
+  {
+    id: "d5-106",
+    domain: "context-management",
+    scenario: "multi-agent-research",
+    question:
+      "A synthesis agent passes a consolidated prose summary to a report generator, which then makes claims it cannot attribute because source metadata was lost in summarization. What most effectively preserves attribution?",
+    options: [
+      "Assign a citation_id at the source stage; emit an inline-tagged narrative plus a structured citation index",
+      "Instruct the synthesis agent to 'preserve all sources' in its prose summary output",
+      "Have the report agent infer the original sources from each claim's wording",
+      "Ask the synthesis agent to re-include the full source text inside its summary",
+    ],
+    correctIndex: 0,
+    explanation:
+      "Prose collapses metadata. Assigning a citation_id at source discovery, then having the synthesis agent write a narrative with inline tags (e.g., [src_001]) while the full metadata travels in a separate structured citation index, keeps content and provenance separable through the pipeline. Prose instructions are probabilistic, inference hallucinates citations, and re-inflating full text triggers lost-in-the-middle.",
+  },
 ];
