@@ -2611,4 +2611,164 @@ export const questions: Question[] = [
     explanation:
       "The root cause is unclear decision boundaries between simple and complex cases. Explicit escalation criteria plus few-shot examples that contrast when to escalate versus resolve directly teach those boundaries with no extra infrastructure. Self-rated confidence is poorly calibrated, a separate classifier is overengineering, and sentiment does not correlate with case complexity.",
   },
+
+  // ============================================================
+  // Tool-interface engineering cluster (chaining, IDs, enums,
+  // pagination, dynamic scoping, annotation trust) plus
+  // over-spawning, goal-vs-procedural prompts, context budget
+  // ============================================================
+  {
+    id: "d2-072",
+    domain: "tool-design-mcp",
+    scenario: "developer-productivity",
+    question:
+      "An agent uses search_documents to find files, then share_document(document_id, email) and move_document(document_id, folder) to act on them. How should search_documents format its output for reliable chaining?",
+    options: [
+      "Return clickable human-readable URLs the agent can follow to each file",
+      "Return structured results each containing the document_id plus metadata",
+      "Return concise prose summaries describing each matching document's content",
+      "Return a plain list of document titles for the agent to choose among",
+    ],
+    correctIndex: 1,
+    explanation:
+      "Multi-step workflows need explicit input/output contracts. Because the downstream tools require a machine-usable document_id, the search tool must return that exact id in a structured result alongside human-readable metadata. URLs, prose, and titles force the agent to infer or parse an identifier, which is brittle.",
+  },
+  {
+    id: "d2-073",
+    domain: "tool-design-mcp",
+    question:
+      "An update_game_score(date, team_name) tool frequently fails because of ambiguous team nicknames, same-day rematches, and date-format variation. What is the most reliable redesign?",
+    options: [
+      "Require strict ISO-8601 dates and official full team names in the schema",
+      "Add regex validation on the parameters to reject malformed inputs early",
+      "Expand the tool description with examples of correctly formatted inputs",
+      "Add a search_games lookup returning game_id; the update tool takes only that id",
+    ],
+    correctIndex: 3,
+    explanation:
+      "Natural-language attributes are brittle database keys. Separating discovery from action (a lookup tool returns an unambiguous game_id, and the mutating tool accepts only that id) eliminates nickname, rematch, and date-format ambiguity. Stricter formatting, regex, or richer docs do not resolve which underlying game is meant.",
+  },
+  {
+    id: "d2-074",
+    domain: "tool-design-mcp",
+    question:
+      "An agent repeatedly runs get_property_details(property_id) only to extract an address it immediately passes to get_neighborhood_info(address). This chaining adds latency and failure points. How should the tools be improved?",
+    options: [
+      "Modify get_neighborhood_info to accept property_id and resolve the address internally",
+      "Merge both tools into one get_all_property_data tool returning everything at once",
+      "Improve the prompt so the agent extracts the address more reliably each time",
+      "Add a middle-tier helper tool that manages the address handoff between them",
+    ],
+    correctIndex: 0,
+    explanation:
+      "When one tool's output is a purely mechanical input to the next, internalizing that predictable dependency (let get_neighborhood_info take property_id and do the lookup itself) removes an LLM-orchestrated step, cutting latency and a failure point. Merging over-consolidates distinct capabilities; prompt tweaks and helper tools keep the brittle chaining.",
+  },
+  {
+    id: "d2-075",
+    domain: "tool-design-mcp",
+    question:
+      "An agent must query specific internal databases, but users refer to them in natural language ('the research database' rather than 'db_res_01'). How should the tool's input schema handle this?",
+    options: [
+      "Accept a freeform string and use backend fuzzy matching to pick the database",
+      "Accept a freeform string but reject the call at runtime if the name is invalid",
+      "Use an enum parameter listing the exact allowed backend database identifiers",
+      "Default to querying every database at once whenever the user is ambiguous",
+    ],
+    correctIndex: 2,
+    explanation:
+      "An enum of exact backend values lets the model use its semantic understanding to map messy natural language onto a strict programmatic value before execution, deterministically constraining input. Backend fuzzy matching pushes ambiguity downstream, runtime rejection wastes a turn, and querying everything spikes cost and context.",
+  },
+  {
+    id: "d2-076",
+    domain: "tool-design-mcp",
+    question:
+      "A search tool automatically fetches and returns every matching record, causing severe latency and context bloat even though most tasks need only the first few results. What is the best redesign of its output?",
+    options: [
+      "Silently cap the response to the five most relevant matches it finds",
+      "Return the first page plus pagination metadata (total count and a cursor)",
+      "Add a separate fetch_next_page tool the agent calls to continue paging",
+      "Add a max_pages parameter so the agent decides how many pages to pull",
+    ],
+    correctIndex: 1,
+    explanation:
+      "Returning the first page with total_matches and a next cursor gives the agent situational awareness to decide whether it has enough or should request more, while keeping context lean. Silent truncation hides information; a separate paging tool clutters the toolset; an internal max_pages still encourages hidden multi-page fetching and latency.",
+  },
+  {
+    id: "d2-077",
+    domain: "tool-design-mcp",
+    question:
+      "An agent has 50+ API-connector tools and frequently selects the wrong one even when told to search first. What is the most effective architectural fix?",
+    options: [
+      "Rewrite all 50 connector descriptions to be longer and more detailed",
+      "Combine every connector into one monolithic call that routes internally",
+      "Improve error handling so the agent recovers after a wrong selection",
+      "Add a search_connectors tool that dynamically exposes only matched tools",
+    ],
+    correctIndex: 3,
+    explanation:
+      "Exposing 50+ tools at once degrades selection accuracy through decision complexity. Dynamic scoping (the agent first calls search_connectors, and the system injects only the few relevant tools for the next turn) proactively shrinks the decision space. Better descriptions still leave systemic overload, a monolith hides parameters, and error handling is reactive.",
+  },
+  {
+    id: "d2-078",
+    domain: "tool-design-mcp",
+    question:
+      "A third-party MCP server provides tools annotated readOnlyHint=true. You are designing when to skip user confirmation. How should you treat these annotations?",
+    options: [
+      "Trust them automatically because the MCP server runs on the local machine",
+      "Treat them as untrusted self-reported metadata; gate bypass on vendor trust",
+      "Infer trust by first exercising the tools in a sandbox and observing effects",
+      "Bypass confirmations freely, since readOnlyHint guarantees no destructive action",
+    ],
+    correctIndex: 1,
+    explanation:
+      "Annotations like readOnlyHint are self-reported by the server and are not a security boundary. Confirmation-bypass policy should rest on explicit trust of the vendor or server, not its own labels. Local execution does not imply trustworthiness, sandbox behavior does not prove hidden capabilities absent, and the hint is a label, not a guarantee.",
+  },
+  {
+    id: "d1-072",
+    domain: "agentic-architecture",
+    scenario: "multi-agent-research",
+    question:
+      "Follow-up summarization queries take 40+ seconds. The coordinator spawns a synthesis subagent per follow-up, passing 80,000 tokens of findings it already holds in its own context from the initial research. What is the most effective fix?",
+    options: [
+      "Compress the findings before passing them to the synthesis subagent",
+      "Cache synthesis subagent responses so repeat follow-ups return faster",
+      "Handle the summarization directly using the coordinator's existing context",
+      "Use fork_session to make spawning the synthesis subagent start faster",
+    ],
+    correctIndex: 2,
+    explanation:
+      "Subagents start fresh and do not inherit the coordinator's history, so spawning one and re-passing 80k tokens the coordinator already has is the anti-pattern. When the coordinator already holds the needed context, it should answer the follow-up itself. Compression and caching still pay the spawn-and-transfer cost; fork_session is for divergent exploration, not latency.",
+  },
+  {
+    id: "d1-073",
+    domain: "agentic-architecture",
+    scenario: "multi-agent-research",
+    question:
+      "A coordinator hands a web-search subagent exact queries, source priorities, and date filters step by step. The subagent reports 'insufficient results' instead of adapting, weakens on emerging topics, and rarely finds unconventional sources. Best fix?",
+    options: [
+      "Replace the procedural steps with goal-oriented prompts stating intent and quality criteria",
+      "Add a fallback rule telling the subagent to report failure under five results",
+      "Expand the hard-coded query lists to explicitly cover emerging topics",
+      "Give the subagent generic single-word queries to broaden its search base",
+    ],
+    correctIndex: 0,
+    explanation:
+      "Over-specified procedural prompts turn a subagent into a rigid executor that dead-ends when prescribed steps fail. Providing the research goal plus quality criteria (minimum distinct claims, source credibility bar) grants authority to form its own queries and adapt. A failure rule reinforces rigidity, hard-coded lists cannot anticipate emerging topics, and single-word queries destroy specificity.",
+  },
+  {
+    id: "d5-104",
+    domain: "context-management",
+    scenario: "structured-data",
+    question:
+      "Extraction is 98% accurate for documents under 150k tokens but drops to 71% for 175k-185k-token documents, with the final third consistently missing. The model's window is 200k; the tool schema and system prompt total ~4,000 tokens. Most likely cause?",
+    options: [
+      "Schemas beyond 8-10 fields inherently raise decision complexity and error rates",
+      "Tool and system-prompt tokens shrink usable context; long docs degrade at the end",
+      "Very long documents always exceed the model's effective mid-document attention span",
+      "The model splits attention proportionally, starving the document's final section",
+    ],
+    correctIndex: 1,
+    explanation:
+      "Context limits are absolute: a ~4k-token schema plus system prompt leaves under 196k for the document, so 180k+ inputs push the payload to the boundary where end-of-prompt attention degrades, exactly matching 'final third missing.' Schema field count causes semantic errors not positional omission (98% on short docs proves the schema is fine); lost-in-the-middle affects the middle; proportional attention is fabricated. Fix by trimming the schema or chunking.",
+  },
 ];
