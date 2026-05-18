@@ -2222,4 +2222,393 @@ export const questions: Question[] = [
     explanation:
       "AI bias refers to systematic patterns in outputs that unfairly favor or disadvantage certain groups or perspectives. These biases often reflect patterns present in the training data. Being aware of and mitigating bias is part of the Diligence competency in AI Fluency.",
   },
+
+  // ============================================================
+  // Scenario 7: Conversational AI Architecture Patterns
+  // ============================================================
+
+  // Instruction drift / system-prompt dilution over turns
+  {
+    id: "d5-090",
+    domain: "context-management",
+    scenario: "conversational-architecture",
+    question:
+      "An assistant follows its contractor-persona system prompt for the first turns, but by turn 7 it gives generic advice. Total conversation length is only 2,500 tokens. What is the most likely cause?",
+    options: [
+      "System prompts only establish the assistant's initial behavior once",
+      "Model attention degrades sharply as the number of turns accumulates",
+      "Accumulated assistant responses dilute the system prompt's influence",
+      "The system prompt is transmitted only on the first request, not after",
+    ],
+    correctIndex: 2,
+    explanation:
+      "As assistant responses accumulate in history, the proportion of text reflecting the system prompt shrinks relative to growing model-generated content. The model increasingly pattern-matches to its own prior outputs, causing drift even at short token counts. The system prompt is resent every call (it is not sent only once), and attention degradation does not operate at 2,500 tokens.",
+  },
+  {
+    id: "d5-091",
+    domain: "context-management",
+    scenario: "conversational-architecture",
+    question:
+      "During QA, Claude follows system-prompt guidelines for the first 10 to 15 turns, then deviates. The conversation is still well within token limits. What is the best solution?",
+    options: [
+      "Move the behavioral guidelines into the very first user message",
+      "Start a fresh conversation automatically once 20 turns are reached",
+      "Validate every response and regenerate any non-compliant outputs",
+      "Insert user-role reminders reinforcing guidelines at breakpoints",
+    ],
+    correctIndex: 3,
+    explanation:
+      "Periodic injection of behavioral reminders re-establishes constraints at intervals as history accumulates, directly countering instruction drift. Moving guidelines to the first user message lowers their authority; starting over destroys context; post-response validation is corrective rather than preventive and adds latency.",
+  },
+  {
+    id: "d4-080",
+    domain: "prompt-engineering",
+    scenario: "conversational-architecture",
+    question:
+      "An AI tutor has a 2,800-token system prompt of declarative teaching rules. After 12 turns it stops adapting to student proficiency levels. What is the most effective fix?",
+    options: [
+      "Inject short rule reminders into the conversation every 4 to 5 turns",
+      "Replace the verbose rules with few-shot examples of level adaptation",
+      "Relocate the most critical rules to the end of the system prompt",
+      "Evaluate each response and regenerate when difficulty mismatches",
+    ],
+    correctIndex: 1,
+    explanation:
+      "A long declarative system prompt is vulnerable to drift because abstract rules must be re-reasoned every turn. Concrete few-shot examples demonstrating correct proficiency-level adaptation give the model behavioral patterns to match, which is followed more reliably over many turns. Reminder injection treats symptoms; end-placement helps only initially; regeneration is expensive and corrective.",
+  },
+  {
+    id: "d4-081",
+    domain: "prompt-engineering",
+    scenario: "conversational-architecture",
+    question:
+      "An assistant must maintain an enthusiastic tone, explain its reasoning, and ask clarifying questions throughout a multi-turn session. Where should these persistent behavioral guidelines be defined?",
+    options: [
+      "Prepended as a block to every individual user message sent",
+      "In the system prompt, which persists across the conversation",
+      "In the first assistant message at the start of the dialogue",
+      "In application environment variables read at session start",
+    ],
+    correctIndex: 1,
+    explanation:
+      "The system prompt is designed for persistent behavioral constraints that apply for the whole conversation. Prepending to every user message is redundant overhead; the first assistant message is unreliable because the model can deviate from its own prior statements; environment variables have no effect on model behavior.",
+  },
+
+  // Tool design for safe execution
+  {
+    id: "d1-070",
+    domain: "agentic-architecture",
+    scenario: "conversational-architecture",
+    question:
+      "A remove_team_member tool has a dry_run boolean for previewing impact, but monitoring shows the agent often calls it with dry_run=false directly, skipping the preview. You must guarantee every removal is preceded by a confirmed preview. What is the most reliable approach?",
+    options: [
+      "Add few-shot examples and detailed tool-description instructions to always preview first",
+      "Allow dry_run=false only if an identical dry_run=true call occurred in the last 60 seconds",
+      "Split into preview_remove_member returning a single-use token and execute_remove_member requiring it",
+      "Annotate the tool as confirmation-required so the orchestration layer prompts before forwarding",
+    ],
+    correctIndex: 2,
+    explanation:
+      "The two-tool token-binding design makes execution architecturally impossible without a prior preview: the execute tool requires a token only the preview tool can mint. This enforces the constraint at the code level rather than relying on LLM compliance with instructions, a fragile timing heuristic, or orchestration infrastructure that may not exist.",
+  },
+  {
+    id: "d2-070",
+    domain: "tool-design-mcp",
+    scenario: "conversational-architecture",
+    question:
+      "A search_catalog tool fails 12% of the time: 8% are network timeouts that succeed on retry, and 4% are query syntax errors that never succeed. Both are currently returned identically, wasting retries. How should you modify error handling?",
+    options: [
+      "Apply uniform exponential-backoff retry logic to every error the tool returns",
+      "Retry timeouts with backoff inside the tool; return syntax errors immediately with details",
+      "Return all errors with a retryable boolean and error-type metadata for the agent",
+      "Add system-prompt few-shot examples teaching the agent to tell the error types apart",
+    ],
+    correctIndex: 1,
+    explanation:
+      "The tool has definitive knowledge of the error type, so handling transient retries inside the tool is the correct abstraction boundary, while syntax errors are returned immediately with validation details. Uniform backoff wastes time on errors that never succeed; a retryable flag pushes interpretation onto the agent; prompt instructions are probabilistic.",
+  },
+  {
+    id: "d1-071",
+    domain: "agentic-architecture",
+    scenario: "conversational-architecture",
+    question:
+      "A webhook reports that a user's package shipped while the user is actively chatting. You want the assistant to weave this into its next reply naturally. What is the best approach?",
+    options: [
+      "Append the shipping status as a prefix to the next user message",
+      "Add the current shipping status into the conversation system prompt",
+      "Send an immediate synthetic user message containing the status update",
+      "Force the assistant to call a shipment-status tool on every single turn",
+    ],
+    correctIndex: 0,
+    explanation:
+      "Prefixing the update to the next user message injects real-time context at a natural conversation boundary without disrupting flow. Modifying the system prompt mid-session is architecturally cumbersome; a synthetic user message breaks dialogue flow and confuses attribution; forcing a tool call every turn is wasteful when such events are rare.",
+  },
+
+  // Handling ambiguous / conflicting user inputs
+  {
+    id: "d4-082",
+    domain: "prompt-engineering",
+    scenario: "conversational-architecture",
+    question:
+      "Across several turns a user said 'I have a very low risk tolerance' and later 'I want to maximize my returns,' then asks 'What should I invest in?' Which approach best ensures the recommendation matches their true priority?",
+    options: [
+      "Provide two separate recommendations, one for each stated preference",
+      "Proceed using the most recently stated preference as authoritative",
+      "Recommend a balanced portfolio without addressing the contradiction",
+      "Surface the contradiction and ask the user which priority matters more",
+    ],
+    correctIndex: 3,
+    explanation:
+      "Low risk tolerance and return maximization are fundamentally incompatible, so any silent assumption may be wrong. Surfacing the conflict and asking for clarification is the only way to guarantee the recommendation aligns with the user's actual intent; the other options each guess on the user's behalf.",
+  },
+  {
+    id: "d4-083",
+    domain: "prompt-engineering",
+    scenario: "conversational-architecture",
+    question:
+      "Users send vague requests like 'Can you help with the report?' The assistant responds with several clarifying questions (which report? what help? deadline?), and 40% of users abandon the conversation. What is the best solution?",
+    options: [
+      "Make reasonable assumptions, state them explicitly, and offer to adjust",
+      "Classify request ambiguity with a smaller model before each response",
+      "Apply predefined interpretations silently without stating any assumptions",
+      "Restrict the assistant to asking only one clarifying question per turn",
+    ],
+    correctIndex: 0,
+    explanation:
+      "Proceeding with reasonable, explicitly stated assumptions removes the back-and-forth while keeping the user informed and in control. Silent predefined interpretations leave users confused when the answer misses intent; a one-question limit still forces multiple turns; a smaller classifier adds latency and infrastructure without solving the UX problem.",
+  },
+  {
+    id: "d4-084",
+    domain: "prompt-engineering",
+    scenario: "conversational-architecture",
+    question:
+      "Users report repetitive response openings like 'Certainly!' and 'I'd be happy to help!' What is the most effective way to eliminate them?",
+    options: [
+      "Lower the temperature setting to reduce variation in phrasing",
+      "Post-process every response to strip leading greeting phrases",
+      "Append a partial assistant message that begins the direct answer",
+      "Add system-prompt instructions explicitly banning those phrases",
+    ],
+    correctIndex: 2,
+    explanation:
+      "Prefilling the assistant's response with the start of a direct answer prevents greeting patterns at generation time, since the model continues from the prefill. System-prompt bans are less reliable (the model produces variants); post-processing is fragile; temperature controls randomness, not specific opening patterns.",
+  },
+
+  // Conversation memory and context window management
+  {
+    id: "d5-092",
+    domain: "context-management",
+    scenario: "conversational-architecture",
+    question:
+      "Two messages after a user said 'I love jazz,' the assistant asks 'What genres do you enjoy?' What is the most likely cause?",
+    options: [
+      "Claude needs a connected vector database to retain conversation memory",
+      "The model's context window has already been exceeded by the exchange",
+      "The Claude API requires a session_id parameter to track the dialogue",
+      "The application is not including prior messages in the messages array",
+    ],
+    correctIndex: 3,
+    explanation:
+      "Claude has no server-side memory; every API call is stateless. If the full conversation history is not included in the messages array of each request, the model has no knowledge of prior turns. Vector databases and session_id are not part of Claude's architecture, and a two-message exchange cannot overflow the context window.",
+  },
+  {
+    id: "d5-093",
+    domain: "context-management",
+    scenario: "conversational-architecture",
+    question:
+      "Users report that latency and cost both rise as a conversation exceeds 50 turns. What is the primary cause?",
+    options: [
+      "The entire conversation history is resent with every API request",
+      "The model generates progressively longer responses as turns grow",
+      "Backing-store database operations slow down as history accumulates",
+      "The model builds an internal user profile that needs more compute",
+    ],
+    correctIndex: 0,
+    explanation:
+      "Because the API is stateless, every request must carry the complete conversation history. As the dialogue grows, each request carries more input tokens, directly increasing both processing latency and cost. The model keeps no internal state between calls, and response length is not inherently tied to conversation length.",
+  },
+  {
+    id: "d5-094",
+    domain: "context-management",
+    scenario: "conversational-architecture",
+    question:
+      "After a 40-minute cooking session the conversation reaches 78,000 tokens, including allergies, recipe scaling, clarified terms, and small talk. You must reduce tokens while preserving important information. What approach is best?",
+    options: [
+      "Summarize the entire conversation history into one compact paragraph",
+      "Keep only the most recent 20,000 tokens and discard everything older",
+      "Extract critical structured data, summarize general talk, keep recent verbatim",
+      "Move the full conversation to external storage and retrieve via semantic search",
+    ],
+    correctIndex: 2,
+    explanation:
+      "The hybrid approach preserves the highest-value information at lowest cost: critical facts like allergies and quantities go into a compact structured block (avoiding the precision loss of summarization), general discussion is summarized, and recent exchanges stay verbatim for coherence. Whole-history summarization or hard truncation risks losing dietary data; external semantic search is overkill for one session.",
+  },
+  {
+    id: "d5-095",
+    domain: "context-management",
+    scenario: "conversational-architecture",
+    question:
+      "An implementation keeps only the last 25 message pairs, and users complain the assistant loses earlier topics and preferences. What is the most effective solution?",
+    options: [
+      "Run vector similarity search over the entire conversation history",
+      "Summarize older messages while keeping recent ones fully verbatim",
+      "Increase the retained window from 25 to 50 message pairs instead",
+      "Summarize dropped messages each turn and prepend a running summary",
+    ],
+    correctIndex: 1,
+    explanation:
+      "The hybrid approach addresses both dimensions: exact recent context for coherence plus a compressed representation of earlier preferences so they are not lost when pairs drop. Enlarging the window only delays the same failure; vector search may miss context not semantically similar to the current query; per-turn summarization adds overhead and compounds summarization errors.",
+  },
+  {
+    id: "d5-096",
+    domain: "context-management",
+    scenario: "conversational-architecture",
+    question:
+      "After three months of weekly sessions a conversation reaches 85,000 tokens. Asked 'What did we conclude about the theme of isolation?' the assistant gives generic answers instead of citing prior discussion. What is the most effective approach?",
+    options: [
+      "Apply rolling-window truncation to keep only the latest exchanges",
+      "Use progressive summarization that captures key conclusions over time",
+      "Add structured XML tags marking conclusions throughout past content",
+      "Use semantic embeddings to retrieve the specific relevant exchanges",
+    ],
+    correctIndex: 3,
+    explanation:
+      "Semantic search over conversation history is the only approach that scales to three months while surfacing specific relevant exchanges on demand. Rolling-window truncation discards most history; progressive summarization abstracts away the specific conclusions being asked about; XML tagging requires restructuring all past content and does not solve retrieval at this scale. (At single-session scale this same technique would be overkill, so the right choice is scale-dependent.)",
+  },
+
+  // ============================================================
+  // Secondary gaps: positional context and multi-source provenance
+  // ============================================================
+  {
+    id: "d5-097",
+    domain: "context-management",
+    question:
+      "When aggregating a long set of multi-file findings into one prompt for a final synthesis, how should you order the content given the lost-in-the-middle effect?",
+    options: [
+      "Place all detailed results first and bury key findings near the middle",
+      "Order content strictly chronologically regardless of relative importance",
+      "Put key findings up front and action items at the end, details between",
+      "Distribute critical findings randomly so none sit consistently mid-prompt",
+    ],
+    correctIndex: 2,
+    explanation:
+      "Models process the start and end of long inputs more reliably than the middle. Position-aware input places key findings at the top and action items at the end, leaving verbose detail in the middle where missing a line matters least. Burying critical conclusions mid-prompt is exactly the failure mode to avoid.",
+  },
+  {
+    id: "d5-098",
+    domain: "context-management",
+    scenario: "multi-agent-research",
+    question:
+      "Two research subagents return different values for the same statistic from different sources and dates. How should the synthesis preserve correctness?",
+    options: [
+      "Pick the value from the more recent source and drop the other one",
+      "Average the two values into a single number for a clean report",
+      "Keep both values with source, date, and methodology; flag the conflict",
+      "Omit the disputed statistic entirely to avoid presenting a contradiction",
+    ],
+    correctIndex: 2,
+    explanation:
+      "Conflicting values should be preserved with full attribution (source, date, methodology) and an explicit conflict flag so the coordinator or reader can reconcile them. Including dates also prevents temporal differences from being misread as contradictions. Arbitrarily choosing, averaging, or dropping values destroys provenance and can hide a real discrepancy.",
+  },
+  {
+    id: "d5-099",
+    domain: "context-management",
+    scenario: "multi-agent-research",
+    question:
+      "In a multi-agent research report, one subtopic's search subagent timed out and returned only partial results. How should the final synthesis present this section?",
+    options: [
+      "Silently exclude the subtopic so the report looks internally complete",
+      "Abort the whole report because one section is missing full coverage",
+      "Include partial results and annotate the section as partial coverage",
+      "Substitute the model's own general knowledge to fill the missing gap",
+    ],
+    correctIndex: 2,
+    explanation:
+      "The synthesis should include the partial results and explicitly annotate coverage (for example, 'PARTIAL COVERAGE: search agent timeout') so readers know where confidence is limited. Silently dropping the section hides the gap; aborting wastes all valid work; backfilling with unsourced model knowledge introduces unattributed, potentially fabricated claims.",
+  },
+
+  // ============================================================
+  // Moderate-gap fills: recurring exam patterns (case facts,
+  // ambiguous matches, policy-gap escalation, prompt-induced
+  // tool bias, escalation calibration)
+  // ============================================================
+  {
+    id: "d5-100",
+    domain: "context-management",
+    scenario: "customer-support",
+    question:
+      "Customers reference specifics like 'the 15% discount I mentioned,' but the agent replies with wrong values because those details were stated 20+ turns ago and condensed into vague summaries. What fix is most effective?",
+    options: [
+      "Raise the summarization trigger threshold so it activates later in the session",
+      "Rewrite the summarization prompt to preserve every number, date, and amount verbatim",
+      "Extract transactional facts into a persistent case-facts block sent in every prompt",
+      "Store full history externally and retrieve it when the agent detects back-references",
+    ],
+    correctIndex: 2,
+    explanation:
+      "Summarization inherently loses precise details. Extracting transactional facts (amounts, dates, order numbers) into a structured case-facts block kept outside the summarized history guarantees they appear in every prompt regardless of how many turns are compressed. Raising thresholds only delays the loss; relying on the summarization prompt is still probabilistic; external retrieval is heavier and fires only when a reference is detected.",
+  },
+  {
+    id: "d5-101",
+    domain: "context-management",
+    scenario: "customer-support",
+    question:
+      "The get_customer tool returns all matches when searching by name. When several match, the agent currently picks the one with the most recent order, choosing the wrong account 15% of the time. How should you address this?",
+    options: [
+      "Ask the user for an additional identifier (email, phone, or order number) before acting",
+      "Add a confidence score that acts autonomously above 85% and asks only below it",
+      "Change get_customer to return one best match via an internal ranking algorithm",
+      "Add few-shot examples showing correct reasoning for ambiguous name matches",
+    ],
+    correctIndex: 0,
+    explanation:
+      "When a tool returns multiple matches, the reliable resolution is to ask the user for a disambiguating identifier, since the user has definitive knowledge of their own identity. One extra turn eliminates a 15% misidentification rate. Confidence heuristics and internal ranking still guess; few-shot examples cannot supply information the agent does not have.",
+  },
+  {
+    id: "d5-102",
+    domain: "context-management",
+    scenario: "customer-support",
+    question:
+      "After calling get_customer and lookup_order, the agent has all available system data. Which situation is the most justified trigger for calling escalate_to_human?",
+    options: [
+      "A customer wants to cancel an order that shipped yesterday and arrives tomorrow",
+      "Tracking shows an order delivered and signed for, but the customer denies receipt",
+      "A message contains both a billing question and a separate product return request",
+      "A customer requests competitor price matching, which policy neither allows nor forbids",
+    ],
+    correctIndex: 3,
+    explanation:
+      "A genuine policy gap (rules cover price drops on your own site but say nothing about competitor matching) requires human judgment, because the agent must not invent policy. The other cases are resolvable within the agent's scope: a normal cancellation, presenting tracking evidence, or decomposing a multi-issue message do not require escalation.",
+  },
+  {
+    id: "d2-071",
+    domain: "tool-design-mcp",
+    scenario: "customer-support",
+    question:
+      "When customers include the word 'account,' the agent calls get_customer first 78% of the time; without that word it calls lookup_order first 93% of the time. Tool descriptions are clear and unambiguous. What is the most likely root cause?",
+    options: [
+      "Base model training links 'account' terminology to customer operations, overriding descriptions",
+      "Keyword-sensitive instructions in the system prompt steer tool selection on terms like 'account'",
+      "The model needs fine-tuning on more messages that mix account and order terminology together",
+      "Tool descriptions lack negative examples specifying when each tool should not be used",
+    ],
+    correctIndex: 1,
+    explanation:
+      "A systematic keyword-driven split (78% vs 93%) with already-clear tool descriptions points to explicit routing language in the system prompt reacting to the word 'account.' System-prompt wording can create unintended tool associations. The pattern is too consistent to be base-training drift, and fine-tuning or negative examples do not address prompt-level steering.",
+  },
+  {
+    id: "d5-103",
+    domain: "context-management",
+    scenario: "customer-support",
+    question:
+      "An agent achieves 55% first-contact resolution against an 80% target. Logs show it escalates simple cases (standard warranty replacements with photo proof) yet handles complex policy exceptions autonomously. What most effectively improves escalation calibration?",
+    options: [
+      "Add explicit escalation criteria to the system prompt with few-shot escalate-vs-resolve examples",
+      "Have the agent self-rate confidence 1 to 10 and auto-escalate below a fixed threshold",
+      "Train a separate classifier on historical tickets to predict escalation before processing",
+      "Run sentiment analysis and escalate whenever customer frustration passes a threshold",
+    ],
+    correctIndex: 0,
+    explanation:
+      "The root cause is unclear decision boundaries between simple and complex cases. Explicit escalation criteria plus few-shot examples that contrast when to escalate versus resolve directly teach those boundaries with no extra infrastructure. Self-rated confidence is poorly calibrated, a separate classifier is overengineering, and sentiment does not correlate with case complexity.",
+  },
 ];

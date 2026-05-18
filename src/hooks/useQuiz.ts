@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo, useEffect } from "react";
+import { useState, useCallback, useMemo, useEffect, useRef } from "react";
 import { questions } from "../questions";
 import type {
   Domain,
@@ -199,6 +199,8 @@ export function useQuiz(
     activeQuestions.length > 0 &&
     state.currentQuestionIndex >= activeQuestions.length;
 
+  // Pure computation only. No side effects here: a useMemo must not call
+  // setState / write localStorage during render.
   const results = useMemo(() => {
     if (!isComplete) return null;
     let correct = 0;
@@ -216,19 +218,33 @@ export function useQuiz(
         domainScores[q.domain].correct++;
       }
     }
+    return { correct, total: activeQuestions.length, domainScores };
+  }, [isComplete, activeQuestions, state.answers]);
+
+  // Record the completed quiz exactly once, after render, as a side effect.
+  const recordedRef = useRef(false);
+  useEffect(() => {
+    if (!isComplete) {
+      // Quiz reset / new quiz: re-arm for the next completion.
+      recordedRef.current = false;
+      return;
+    }
+    if (!results || recordedRef.current) return;
+    recordedRef.current = true;
     const entry: QuizHistory = {
       date: Date.now(),
       mode: state.mode,
-      total: activeQuestions.length,
-      correct,
-      domainScores,
+      total: results.total,
+      correct: results.correct,
+      domainScores: results.domainScores,
     };
-    const updated = [...history, entry];
-    saveHistory(updated);
-    setHistory(updated);
+    setHistory((h) => {
+      const updated = [...h, entry];
+      saveHistory(updated);
+      return updated;
+    });
     clearSession();
-    return { correct, total: activeQuestions.length, domainScores };
-  }, [isComplete, activeQuestions, state.answers, state.mode, history]);
+  }, [isComplete, results, state.mode]);
 
   const resetQuiz = useCallback(() => {
     setActiveQuestions([]);

@@ -408,7 +408,7 @@ function HomeScreen({
             </li>
             <li>Scaled score 100-1,000; passing score is 720</li>
             <li>No penalty for guessing</li>
-            <li>4 scenarios selected from 6 possible</li>
+            <li>Scenario-based questions drawn from 7 possible scenarios</li>
             <li>
               Scenario-based questions grounded in realistic production contexts
             </li>
