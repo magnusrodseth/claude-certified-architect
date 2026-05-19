@@ -310,7 +310,16 @@ function HomeScreen({
             <button className="mode-card" onClick={() => startQuiz("exam")}>
               <div className="mode-title">Practice Exam</div>
               <div className="mode-desc">
-                40 questions, simulating exam conditions
+                40 official questions, domain-weighted like the real exam
+              </div>
+            </button>
+            <button
+              className="mode-card"
+              onClick={() => startQuiz("weighted-practice")}
+            >
+              <div className="mode-title">Weighted Practice</div>
+              <div className="mode-desc">
+                60 questions, full pool, drawn by exam domain weights
               </div>
             </button>
             <button className="mode-card" onClick={() => startQuiz("review")}>

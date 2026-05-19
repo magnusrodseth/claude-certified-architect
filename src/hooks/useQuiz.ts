@@ -8,6 +8,7 @@ import type {
   QuizHistory,
   ShuffledQuestion,
 } from "../types";
+import { DOMAIN_WEIGHTS } from "../types";
 
 const HISTORY_KEY = "claude-cert-history";
 const SESSION_KEY = "claude-cert-session";
@@ -69,6 +70,52 @@ function shuffle<T>(arr: T[]): T[] {
   return a;
 }
 
+const WEIGHTED_DOMAINS: Domain[] = [
+  "agentic-architecture",
+  "tool-design-mcp",
+  "claude-code-config",
+  "prompt-engineering",
+  "context-management",
+];
+
+/**
+ * Draw `total` questions from `pool`, with each domain's share proportional to
+ * its official exam weight (DOMAIN_WEIGHTS). Largest-remainder rounding makes
+ * the per-domain counts sum exactly to `total`. If a domain has fewer questions
+ * than its target, the shortfall is backfilled from the rest of the pool so the
+ * exam still has `total` questions. This is what enforces exam-correct
+ * weighting; the raw per-domain counts in the pool do not need to match.
+ */
+function weightedSample(pool: Question[], total: number): Question[] {
+  const exact = WEIGHTED_DOMAINS.map((d) => ({
+    d,
+    value: (total * DOMAIN_WEIGHTS[d]) / 100,
+  }));
+  const target: Record<Domain, number> = {} as Record<Domain, number>;
+  let assigned = 0;
+  for (const e of exact) {
+    target[e.d] = Math.floor(e.value);
+    assigned += target[e.d];
+  }
+  const byRemainder = [...exact].sort(
+    (a, b) => (b.value % 1) - (a.value % 1)
+  );
+  for (let i = 0; assigned < total; i++, assigned++) {
+    target[byRemainder[i % byRemainder.length].d] += 1;
+  }
+  const picked: Question[] = [];
+  const leftovers: Question[] = [];
+  for (const d of WEIGHTED_DOMAINS) {
+    const inDomain = shuffle(pool.filter((q) => q.domain === d));
+    picked.push(...inDomain.slice(0, target[d]));
+    leftovers.push(...inDomain.slice(target[d]));
+  }
+  if (picked.length < total) {
+    picked.push(...shuffle(leftovers).slice(0, total - picked.length));
+  }
+  return shuffle(picked);
+}
+
 function shuffleQuestionOptions(q: Question): ShuffledQuestion {
   const indices = [0, 1, 2, 3];
   const shuffled = shuffle(indices);
@@ -125,7 +172,14 @@ export function useQuiz(
       } else if (mode === "scenario" && scenario) {
         filtered = questions.filter((q) => q.scenario === scenario);
       } else if (mode === "exam") {
-        filtered = shuffle(questions).slice(0, 40);
+        // Exam simulator: official exam-guide questions only, drawn in
+        // proportion to the real exam's domain weights.
+        const official = questions.filter((q) => q.source !== "ai-generated");
+        filtered = weightedSample(official, 40);
+      } else if (mode === "weighted-practice") {
+        // Longer exam-realistic drill from the full pool (official +
+        // AI-generated), still domain-weighted.
+        filtered = weightedSample(questions, 60);
       } else if (mode === "review") {
         const missed = loadHistory().flatMap((h) =>
           Object.entries(h.domainScores)

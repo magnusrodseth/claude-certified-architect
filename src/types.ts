@@ -61,7 +61,14 @@ export interface QuizState {
   currentQuestionIndex: number;
   answers: Record<string, number | null>;
   flagged: Set<string>;
-  mode: "domain" | "scenario" | "exam" | "review" | "all" | "ai-practice";
+  mode:
+    | "domain"
+    | "scenario"
+    | "exam"
+    | "review"
+    | "all"
+    | "ai-practice"
+    | "weighted-practice";
   selectedDomain?: Domain;
   selectedScenario?: Scenario;
   startedAt?: number;

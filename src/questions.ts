@@ -2840,4 +2840,1045 @@ export const questions: Question[] = [
     explanation:
       "Prose collapses metadata. Assigning a citation_id at source discovery, then having the synthesis agent write a narrative with inline tags (e.g., [src_001]) while the full metadata travels in a separate structured citation index, keeps content and provenance separable through the pipeline. Prose instructions are probabilistic, inference hallucinates citations, and re-inflating full text triggers lost-in-the-middle.",
   },
+
+  // ============================================================
+  // AI-GENERATED from Anthropic Academy course crawl (2026-05-19)
+  // Concept-derived; see docs/notes/source-coverage-map.md
+  // ============================================================
+
+  // ---- Domain 1: Agentic Architecture (subagents course) ----
+  {
+    id: "d1-074",
+    source: "ai-generated",
+    domain: "agentic-architecture",
+    scenario: "multi-agent-research",
+    question:
+      "When the main agent delegates to a subagent, what exactly does the subagent receive to begin its work?",
+    options: [
+      "A custom system prompt from its config plus a task description the parent writes",
+      "The full conversation history of the main thread plus the original user message",
+      "Only the raw user request, with no system prompt or parent instructions",
+      "A shared context window that both the parent and the subagent keep writing to",
+    ],
+    correctIndex: 0,
+    explanation:
+      "A subagent gets two things: the system prompt defined in its config file, and a task description the parent agent writes based on the request. It does not inherit the main thread's history; the subagent runs in an isolated context and returns only a summary.",
+  },
+  {
+    id: "d1-075",
+    source: "ai-generated",
+    domain: "agentic-architecture",
+    scenario: "developer-productivity",
+    question:
+      "In a subagent config file, which YAML frontmatter field controls when Claude decides to delegate to that subagent?",
+    options: [
+      "The model field, since it determines which Claude tier handles routing",
+      "The color field, which the parent reads to prioritize subagents",
+      "The description field, which guides when Claude invokes the subagent",
+      "The tools field, since available tools imply the subagent's purpose",
+    ],
+    correctIndex: 2,
+    explanation:
+      "The description field controls when Claude decides to use the subagent and is the primary routing signal; it must be a single line and may include example conversations. model picks the tier, color is a UI label, and tools sets access, none of which drive delegation decisions.",
+  },
+  {
+    id: "d1-076",
+    source: "ai-generated",
+    domain: "agentic-architecture",
+    scenario: "code-generation",
+    question:
+      "You are writing the system prompt for a code-review subagent. Which single change most improves the usefulness of what it returns to the main agent?",
+    options: [
+      "Adding the phrase 'you are a senior staff engineer with deep expertise'",
+      "Specifying an exact output format and how to structure its findings",
+      "Granting it every available tool so it never gets blocked mid-task",
+      "Telling it to run as many iterations as it needs without limits",
+    ],
+    correctIndex: 1,
+    explanation:
+      "Being specific about what to look for and how to structure the report is the difference between a useful subagent and one that misses the point. Expertise claims add nothing Claude lacks, broad tool access violates least privilege, and unbounded iteration does not improve report quality.",
+  },
+  {
+    id: "d1-077",
+    source: "ai-generated",
+    domain: "agentic-architecture",
+    scenario: "code-generation",
+    question:
+      "A team builds three sequential subagents: one reproduces a bug, one debugs it, one fixes it. Why is this pipeline an anti-pattern?",
+    options: [
+      "Subagents cannot run shell commands, so reproduction always fails",
+      "Pipelines require the parent to merge outputs, which is unsupported",
+      "Each step depends on the previous step's discoveries, so handoffs lose information",
+      "Three subagents exceed the maximum allowed concurrent Task calls",
+    ],
+    correctIndex: 2,
+    explanation:
+      "Sequential subagent pipelines work only when steps are truly independent. Bug fixing depends heavily on what each prior step discovered, and that detail gets lost compressing each subagent's context into a summary. The other options describe limits that do not exist.",
+  },
+  {
+    id: "d1-078",
+    source: "ai-generated",
+    domain: "agentic-architecture",
+    scenario: "developer-productivity",
+    question:
+      "Which proposed subagent adds genuine value over just asking the main thread directly?",
+    options: [
+      "A 'Python expert' subagent that claims deep language mastery",
+      "A 'Kubernetes specialist' subagent that asserts cluster expertise",
+      "A 'test runner' subagent that runs the suite and reports pass or fail",
+      "A styling subagent pointed at the design-system files it auto-loads",
+    ],
+    correctIndex: 3,
+    explanation:
+      "A styling subagent is better than the main thread because its config loads the design-system files into context, giving it knowledge the main thread lacks. Expert-claim subagents add nothing Claude already knows, and test-runner subagents tend to hide the failure detail you actually need.",
+  },
+  {
+    id: "d1-079",
+    source: "ai-generated",
+    domain: "agentic-architecture",
+    scenario: "code-generation",
+    question:
+      "You spent many turns building a feature with the main thread and now want a rigorous review. Why is delegating the review to a separate subagent better than asking the same thread?",
+    options: [
+      "The subagent runs on a faster model, so it finishes reviewing sooner",
+      "It sees the changes fresh, without the history of how the code was written",
+      "Subagents are the only place git diff can be executed safely",
+      "Reviewing in the main thread permanently corrupts the conversation state",
+    ],
+    correctIndex: 1,
+    explanation:
+      "Claude reviews more effectively when code appears authored by someone else; a thread that helped write the code struggles to see it with fresh eyes. The subagent reviews in a clean context and can encode team review standards. Model speed and false claims about git or corruption are not the reason.",
+  },
+  {
+    id: "d1-080",
+    source: "ai-generated",
+    domain: "agentic-architecture",
+    scenario: "developer-productivity",
+    question:
+      "When configuring tool access for a code-review subagent, which choice best reflects least-privilege design?",
+    options: [
+      "Grant read-only and execution tools but withhold edit tools",
+      "Grant all tool categories so it never stalls waiting for access",
+      "Grant only edit tools so it can apply the fixes it identifies",
+      "Grant no tools at all so it cannot touch the codebase",
+    ],
+    correctIndex: 0,
+    explanation:
+      "A reviewer should read and analyze, not change code, so edit tools are withheld; execution tools can stay enabled so it can surface pending changes. Granting all tools breaks least privilege, edit-only stops it from reading code, and no tools leaves it unable to inspect anything.",
+  },
+  {
+    id: "d1-081",
+    source: "ai-generated",
+    domain: "agentic-architecture",
+    scenario: "multi-agent-research",
+    question:
+      "What is the fundamental tradeoff you accept when you push exploratory work into a subagent instead of the main thread?",
+    options: [
+      "Subagent results cost more tokens than doing the work inline",
+      "You lose visibility into how it reached its conclusion, getting only a summary",
+      "The subagent permanently consumes one of a fixed number of slots",
+      "The main thread can no longer call any tools until the subagent returns",
+    ],
+    correctIndex: 1,
+    explanation:
+      "The subagent keeps the main context clean, but the entire intermediate conversation is discarded and you only see a compressed summary, losing insight into the path it took. Isolation actually reduces main-context cost, and there is no slot limit or tool lockout.",
+  },
+  {
+    id: "d1-082",
+    source: "ai-generated",
+    domain: "agentic-architecture",
+    scenario: "developer-productivity",
+    question:
+      "A task has steps where each step's next action depends on what the previous step discovered. Where should this work run?",
+    options: [
+      "In a chain of one subagent per step, handing summaries forward",
+      "In the main thread, since each step builds on prior discoveries",
+      "In parallel subagents launched all at once for speed",
+      "In a single subagent that claims domain expertise in the task",
+    ],
+    correctIndex: 1,
+    explanation:
+      "Subagents shine when exploration is separable from execution. When each step depends on the previous step's findings, that work belongs in the main thread; chaining subagents loses information in the handoffs, and parallelizing dependent steps is incorrect.",
+  },
+  {
+    id: "d1-083",
+    source: "ai-generated",
+    domain: "agentic-architecture",
+    scenario: "developer-productivity",
+    question:
+      "You want a custom subagent available across every project on your machine, not just the current repository. Which scope do you choose when creating it?",
+    options: [
+      "Project-level scope, then symlink the config into other repos",
+      "Global tool scope, which exposes it through MCP automatically",
+      "User-level scope, which shares it across all projects on the machine",
+      "Inherit scope, which copies it wherever the main session runs",
+    ],
+    correctIndex: 2,
+    explanation:
+      "Subagent scope is either project-level (current project only) or user-level (shared across all projects on your machine). There is no global-MCP or inherit scope; inherit is a model option, not a scope.",
+  },
+  {
+    id: "d1-084",
+    source: "ai-generated",
+    domain: "agentic-architecture",
+    scenario: "multi-agent-research",
+    question:
+      "You want to investigate how authentication works in an unfamiliar codebase without flooding the main context with dozens of file reads. Which built-in subagent fits best?",
+    options: [
+      "The Explore subagent, for fast searching and codebase navigation",
+      "The General purpose subagent, since only it can read files",
+      "A custom 'auth expert' subagent that claims security expertise",
+      "The Plan subagent, which is the only one allowed outside plan mode",
+    ],
+    correctIndex: 0,
+    explanation:
+      "Explore is built for fast searching and navigation of codebases, ideal for read-many-files research that should stay out of the main context. General purpose is for multi-step explore-and-act work, an expertise-claim subagent adds no value, and Plan is used during plan mode.",
+  },
+  {
+    id: "d1-085",
+    source: "ai-generated",
+    domain: "agentic-architecture",
+    scenario: "developer-productivity",
+    question:
+      "You want a subagent to run on whatever model the main conversation is currently using, rather than pinning it to a fixed tier. Which model setting accomplishes this?",
+    options: [
+      "Set model to sonnet, the documented default for delegated work",
+      "Set model to inherit, so it uses the main conversation's model",
+      "Omit the model field, which forces Haiku for cost efficiency",
+      "Set model to opus, which then auto-downgrades to match the parent",
+    ],
+    correctIndex: 1,
+    explanation:
+      "The model field accepts sonnet, opus, haiku, or inherit; inherit uses whatever model the main conversation is running. Fixed tiers pin the subagent to that model, and omitting the field does not silently force Haiku.",
+  },
+  {
+    id: "d1-086",
+    source: "ai-generated",
+    domain: "agentic-architecture",
+    scenario: "multi-agent-research",
+    question:
+      "A research subagent searched 30 files but hit a blocker it could not resolve. What should a well-designed subagent system prompt instruct it to do?",
+    options: [
+      "Silently return its best partial guess so the summary stays short",
+      "Keep retrying indefinitely until it forces the task to succeed",
+      "Report the obstacle and its findings clearly back to the main agent",
+      "Spawn its own child subagents to work around the blocker itself",
+    ],
+    correctIndex: 2,
+    explanation:
+      "The subagent's system prompt should specify how it reports findings back to the main agent, including obstacles it could not resolve, so the main thread can decide next steps. Silent guessing hides information, infinite retries waste work, and having it spawn its own child subagents to bypass the blocker is uncontrolled and wasteful.",
+  },
+
+  // ---- Domain 2: Tool Design & MCP (MCP intro + advanced) ----
+  {
+    id: "d2-079",
+    source: "ai-generated",
+    domain: "tool-design-mcp",
+    scenario: "developer-productivity",
+    question:
+      "An MCP video-conversion tool needs a full file path, but users only type 'convert biking.mp4'. How do MCP roots solve this?",
+    options: [
+      "They cache file contents on the server so paths are never needed again",
+      "They let Claude list and search approved directories to resolve the path",
+      "They rewrite every tool schema to accept relative paths automatically",
+      "They embed the file system index directly into the system prompt text",
+    ],
+    correctIndex: 1,
+    explanation:
+      "Roots grant the server access to specific folders; Claude calls list_roots, then reads those directories to locate the file and pass a full path. They also bound access for security. Caching, schema rewriting, and embedding a full file index are not how roots work.",
+  },
+  {
+    id: "d2-080",
+    source: "ai-generated",
+    domain: "tool-design-mcp",
+    question:
+      "When using MCP roots, who enforces that a requested path actually falls within an approved root directory?",
+    options: [
+      "The MCP SDK blocks out-of-root paths automatically at the transport layer",
+      "Your tool code, via a helper like is_path_allowed before the operation",
+      "The MCP client refuses to forward any CallToolRequest with a bad path",
+      "Claude itself validates the path before ever emitting the tool call",
+    ],
+    correctIndex: 1,
+    explanation:
+      "The MCP SDK does not auto-enforce root restrictions; you must implement a check (e.g. is_path_allowed) that compares the requested path against the approved roots inside each file-accessing tool. Roots provide the boundary, but enforcement is the server author's responsibility.",
+  },
+  {
+    id: "d2-081",
+    source: "ai-generated",
+    domain: "tool-design-mcp",
+    scenario: "multi-agent-research",
+    question:
+      "A long-running MCP research tool leaves users staring at a frozen screen. Which mechanism gives real-time feedback during execution?",
+    options: [
+      "Returning partial tool results in multiple separate CallToolResult messages",
+      "context.info and context.report_progress calls inside the tool function",
+      "Setting json_response=True so the client polls for status updates faster",
+      "Splitting the tool into smaller tools the model calls one after another",
+    ],
+    correctIndex: 1,
+    explanation:
+      "The Context argument exposes context.info (log messages) and context.report_progress (current/total) so the server streams updates while the tool runs. json_response=True actually disables streaming, and splitting tools or returning multiple results does not provide in-progress feedback.",
+  },
+  {
+    id: "d2-082",
+    source: "ai-generated",
+    domain: "tool-design-mcp",
+    question:
+      "In MCP, how do request-result messages differ from notification messages?",
+    options: [
+      "Notifications are encrypted while request-result pairs are sent in plaintext",
+      "Request-result come in paired exchanges; notifications are one-way, no reply",
+      "Only the client may send requests; only the server may send notifications",
+      "Notifications must complete before any request-result pair can be started",
+    ],
+    correctIndex: 1,
+    explanation:
+      "Request-result messages always pair (CallToolRequest to CallToolResult); notifications (progress, logging, tool list changed) are one-way and expect no response. Both clients and servers can send each, so the client-only/server-only split and ordering claims are wrong; encryption is unrelated.",
+  },
+  {
+    id: "d2-083",
+    source: "ai-generated",
+    domain: "tool-design-mcp",
+    question:
+      "Why does the StreamableHTTP transport need a Server-Sent Events (SSE) connection?",
+    options: [
+      "To compress JSON payloads so large tool results transfer more efficiently",
+      "To let the server initiate requests and notifications back to the client",
+      "To authenticate each client before any tool call is allowed to proceed",
+      "To replace the initialize handshake that stdio transport requires first",
+    ],
+    correctIndex: 1,
+    explanation:
+      "Plain HTTP only lets clients initiate requests, but sampling, progress, and logging require server-initiated messages. StreamableHTTP opens a long-lived SSE channel so the server can push messages to the client. It is not for compression, auth, or replacing the handshake.",
+  },
+  {
+    id: "d2-084",
+    source: "ai-generated",
+    domain: "tool-design-mcp",
+    question:
+      "After the StreamableHTTP initialize handshake, what must the client include on all subsequent requests?",
+    options: [
+      "The full tool schema list returned by the initial ListToolsResult",
+      "The mcp-session-id header returned in the Initialize Result",
+      "A fresh SSE connection opened individually for every single request",
+      "An updated Initialized Notification re-sent before each tool call",
+    ],
+    correctIndex: 1,
+    explanation:
+      "The Initialize Result returns an mcp-session-id header that uniquely identifies the client and must be sent on all later requests. Schemas are not resent per request, the primary SSE connection persists rather than being recreated per request, and the Initialized Notification is sent only once.",
+  },
+  {
+    id: "d2-085",
+    source: "ai-generated",
+    domain: "tool-design-mcp",
+    scenario: "ci-cd",
+    question:
+      "A popular MCP server must scale horizontally behind a load balancer. What is the main trade-off of setting stateless_http=True?",
+    options: [
+      "Tool inputs are no longer validated against their JSON schemas on the server",
+      "Sampling, progress reports, and server-to-client requests stop working",
+      "All tool calls become synchronous and can no longer run in parallel batches",
+      "Resources can still be read but tools can no longer be listed or called",
+    ],
+    correctIndex: 1,
+    explanation:
+      "stateless_http=True drops session IDs and the GET SSE pathway, so sampling, progress reports, and other server-to-client communication are unavailable (the upside is no handshake needed and easy load-balancing). Schema validation, batching, and tool listing are unaffected.",
+  },
+  {
+    id: "d2-086",
+    source: "ai-generated",
+    domain: "tool-design-mcp",
+    question:
+      "What does setting json_response=True on a StreamableHTTP MCP server do?",
+    options: [
+      "Disables streaming so only the final tool result returns, as plain JSON",
+      "Forces every tool to return objects instead of plain string content",
+      "Removes session IDs so the server can run behind a load balancer",
+      "Validates each tool's output against a JSON schema before responding",
+    ],
+    correctIndex: 0,
+    explanation:
+      "json_response=True disables streaming for POST responses: no intermediate progress or log messages, just the final result as plain JSON. Dropping session IDs for scaling is what stateless_http does; it does not change content typing or add output schema validation.",
+  },
+  {
+    id: "d2-087",
+    source: "ai-generated",
+    domain: "tool-design-mcp",
+    scenario: "code-generation",
+    question:
+      "When Claude decides to call a tool, how is that signaled and structured in the API response?",
+    options: [
+      "A plain text block whose content is the JSON arguments for the function",
+      "stop_reason is 'tool_use' and content includes a tool_use block with id/name/input",
+      "A separate top-level tool_calls field outside the message content array",
+      "stop_reason is 'end_turn' and the tool name appears in the response metadata",
+    ],
+    correctIndex: 1,
+    explanation:
+      "Tool requests set stop_reason to 'tool_use'; the assistant message content is multi-block, containing optional text plus a tool_use block with id, name, and input. There is no separate tool_calls field, the arguments are not a text block, and end_turn means Claude is done, not calling a tool.",
+  },
+  {
+    id: "d2-088",
+    source: "ai-generated",
+    domain: "tool-design-mcp",
+    question:
+      "When sending a tool_result back to Claude in the follow-up request, what is still required even though you expect no further tool call?",
+    options: [
+      "A new unique tool_use_id different from the original tool_use block id",
+      "The original tool schema must still be passed in the tools parameter",
+      "The is_error flag must always be explicitly set to True on the result",
+      "The entire prior assistant text must be stripped from the message history",
+    ],
+    correctIndex: 1,
+    explanation:
+      "The follow-up call must still include the tool schema so Claude can interpret the tool references in history. The tool_use_id must match (not differ from) the original block, is_error is only True on failures, and the full conversation history including assistant blocks must be preserved.",
+  },
+  {
+    id: "d2-089",
+    source: "ai-generated",
+    domain: "tool-design-mcp",
+    scenario: "structured-data",
+    question:
+      "A team enables fine-grained tool calling to stream tool arguments faster. What critical behavior changes?",
+    options: [
+      "Claude generates tool inputs in a strict alphabetical key order instead",
+      "API-side JSON validation is disabled, so your code may receive invalid JSON",
+      "Each tool call is automatically retried until valid JSON is produced",
+      "Tool results are buffered until the entire arguments object is complete",
+    ],
+    correctIndex: 1,
+    explanation:
+      "Fine-grained tool calling disables the API's JSON validation buffering, so chunks arrive immediately but your code must handle potentially invalid JSON. It does not reorder keys, auto-retry, or buffer; buffering is exactly the default behavior it removes.",
+  },
+  {
+    id: "d2-090",
+    source: "ai-generated",
+    domain: "tool-design-mcp",
+    question:
+      "An MCP server defines a templated resource docs://documents/{doc_id}. How does the client request a specific document, and how is the parameter handled?",
+    options: [
+      "It calls a tool named fetch_doc; doc_id is passed as a tool input argument",
+      "It sends a ReadResourceRequest with the filled URI; the SDK passes doc_id to the function",
+      "It lists all resources, downloads them, and filters by doc_id on the client side",
+      "It posts the doc_id in a CallToolRequest body and the server returns the contents",
+    ],
+    correctIndex: 1,
+    explanation:
+      "Resources are fetched via ReadResourceRequest with a URI; for templated resources the Python SDK parses URI parameters and passes them as keyword arguments (doc_id) to the resource function. Resources are not tools, so CallToolRequest and tool-input framing are wrong, and clients do not bulk-download then filter.",
+  },
+
+  // ---- Domain 3: Claude Code Config (skills + hooks courses) ----
+  {
+    id: "d3-042",
+    source: "ai-generated",
+    domain: "claude-code-config",
+    scenario: "code-generation",
+    question:
+      "A developer puts a detailed PR-review checklist into a SKILL.md but Claude never seems to apply it when they ask 'look over my changes.' The file passes the skills validator and appears in the available skills list. What is the most likely fix?",
+    options: [
+      "Move the skill from .claude/skills to ~/.claude/skills so it loads in every project",
+      "Add trigger phrases to the description that match how requests are actually worded",
+      "Add an allowed-tools field so the skill is permitted to read the diff",
+      "Rename the SKILL.md file to skill.md so Claude Code can discover it",
+    ],
+    correctIndex: 1,
+    explanation:
+      "Claude matches requests to skills semantically using the description field. When a validated, loaded skill does not trigger, the cause is almost always a description that lacks the keywords the user actually uses, so adding trigger phrases resolves it.",
+  },
+  {
+    id: "d3-043",
+    source: "ai-generated",
+    domain: "claude-code-config",
+    scenario: "developer-productivity",
+    question:
+      "At startup, what does Claude Code load from each discovered skill, and when is the rest of the SKILL.md read?",
+    options: [
+      "The entire SKILL.md is loaded at startup so the instructions are always available",
+      "Only the allowed-tools list loads at startup; instructions load on the first tool call",
+      "Only the name and description load; the full file loads after a match and your confirmation",
+      "Nothing loads until you invoke the skill explicitly with a slash command",
+    ],
+    correctIndex: 2,
+    explanation:
+      "Claude Code scans skill locations and loads only the name and description into context at startup. When a request matches a description, Claude asks you to confirm, then reads the complete SKILL.md and follows its instructions.",
+  },
+  {
+    id: "d3-044",
+    source: "ai-generated",
+    domain: "claude-code-config",
+    scenario: "developer-productivity",
+    question:
+      "A team wants brand guidelines applied automatically only when relevant, a TypeScript-strict-mode rule applied to every conversation, and a linter to run on every file save. Which mapping fits Claude Code's features?",
+    options: [
+      "Guidelines as a hook, strict mode as a skill, linter as a subagent",
+      "Guidelines as a skill, strict mode in CLAUDE.md, linter as a hook",
+      "Guidelines in CLAUDE.md, strict mode as a hook, linter as a skill",
+      "Guidelines as a subagent, strict mode as a skill, linter in CLAUDE.md",
+    ],
+    correctIndex: 1,
+    explanation:
+      "Skills load on demand for task-specific expertise, CLAUDE.md loads into every conversation for always-on standards, and hooks are event-driven and fire on actions like file saves. That maps guidelines to a skill, strict mode to CLAUDE.md, and the linter to a hook.",
+  },
+  {
+    id: "d3-045",
+    source: "ai-generated",
+    domain: "claude-code-config",
+    scenario: "developer-productivity",
+    question:
+      "An organization has an enterprise-managed 'code-review' skill, and a developer also has a personal 'code-review' skill. The personal one is never used. What is happening and what is the simplest fix?",
+    options: [
+      "Personal skills are disabled by default; enable them in settings.local.json",
+      "Project skills always win; move the personal skill into .claude/skills",
+      "Plugins override personal skills; uninstall the conflicting plugin first",
+      "Enterprise skills have the highest priority for name conflicts; rename the personal skill",
+    ],
+    correctIndex: 3,
+    explanation:
+      "The priority order for name conflicts is Enterprise, then Personal, then Project, then Plugins. An enterprise skill with the same name always wins, so renaming the personal skill to something distinct is the simplest resolution.",
+  },
+  {
+    id: "d3-046",
+    source: "ai-generated",
+    domain: "claude-code-config",
+    scenario: "code-generation",
+    question:
+      "A skill needs a large reference document and a utility script in addition to its instructions. How should it be structured to keep context efficient?",
+    options: [
+      "Inline everything into one SKILL.md so Claude always has the full reference available",
+      "Keep SKILL.md concise and link supporting files Claude reads or runs only when needed",
+      "Split the content across multiple SKILL.md files in the same skill directory",
+      "Put the reference in CLAUDE.md and keep only the script next to SKILL.md",
+    ],
+    correctIndex: 1,
+    explanation:
+      "Progressive disclosure keeps SKILL.md small (under about 500 lines) and links to supporting references, assets, and scripts that Claude loads only when needed. Scripts run without their contents entering context, so only their output consumes tokens.",
+  },
+  {
+    id: "d3-047",
+    source: "ai-generated",
+    domain: "claude-code-config",
+    scenario: "developer-productivity",
+    question:
+      "A skill committed to .claude/skills is not appearing when a teammate asks 'what skills are available' after cloning the repo. Which structural issue should be checked first?",
+    options: [
+      "SKILL.md must sit in a named subdirectory and be named exactly SKILL.md",
+      "The skill must be registered in .claude/settings.json under a skills array",
+      "The description must be under 1,024 characters or the loader skips it",
+      "The skill needs an allowed-tools field before Claude Code will list it",
+    ],
+    correctIndex: 0,
+    explanation:
+      "If a skill does not load, the file must be inside a named directory (not at the skills root) and named exactly SKILL.md (uppercase SKILL, lowercase md). Running claude --debug surfaces loading errors mentioning the skill name.",
+  },
+  {
+    id: "d3-048",
+    source: "ai-generated",
+    domain: "claude-code-config",
+    scenario: "developer-productivity",
+    question:
+      "What is the difference between how project skills and plugins distribute skills?",
+    options: [
+      "Project skills require a marketplace install; plugins are shared automatically via Git",
+      "Project skills override enterprise skills; plugins cannot be overridden once installed",
+      "Project skills in .claude/skills ship via Git on clone; plugins distribute across repos via marketplaces",
+      "Project skills load on demand; plugin skills always load into every conversation",
+    ],
+    correctIndex: 2,
+    explanation:
+      "Project skills in .claude/skills are version-controlled and everyone who clones the repo gets them. Plugins package skills for distribution across many repositories through marketplaces, suited to skills useful beyond one team.",
+  },
+  {
+    id: "d3-049",
+    source: "ai-generated",
+    domain: "claude-code-config",
+    scenario: "multi-agent-research",
+    question:
+      "A developer adds a skill but a subagent they delegate work to ignores it. What is the correct explanation?",
+    options: [
+      "Subagents inherit skills only when the skill is a personal skill, not a project skill",
+      "Skills only work in plan mode; the subagent ran in direct execution mode",
+      "Subagents cache skills at startup; the subagent must be restarted to pick it up",
+      "Subagents start with a clean context; custom subagents must list the skill in their skills frontmatter",
+    ],
+    correctIndex: 3,
+    explanation:
+      "Subagents do not automatically see skills because they begin with a fresh context. Built-in agents (Explorer, Plan, Verify) cannot use skills at all; only custom subagents defined in .claude/agents can, and only when the skill is listed in the agent's skills frontmatter field.",
+  },
+  {
+    id: "d3-050",
+    source: "ai-generated",
+    domain: "claude-code-config",
+    scenario: "ci-cd",
+    question:
+      "In a PreToolUse hook that should block Claude from reading a sensitive file, how does the hook signal the block and pass an explanation back to Claude?",
+    options: [
+      "Return a JSON object with allow:false on stdout and the reason in a message field",
+      "Exit with code 2 and write the explanation to standard error",
+      "Exit with code 1 and write the explanation to standard output",
+      "Throw an exception; Claude Code reads the stack trace as the block reason",
+    ],
+    correctIndex: 1,
+    explanation:
+      "A hook command receives the tool call as JSON on stdin. Exit code 0 allows the call; exit code 2 blocks it in a PreToolUse hook, and anything written to stderr is sent to Claude as the explanation for the block.",
+  },
+  {
+    id: "d3-051",
+    source: "ai-generated",
+    domain: "claude-code-config",
+    scenario: "ci-cd",
+    question:
+      "Why can a PreToolUse hook that checks tool_input.file_path for '.env' still fail to fully protect that file, and what complements it?",
+    options: [
+      "Hooks only run for the Write tool; add a PostToolUse matcher and a deny rule",
+      "PreToolUse hooks cannot block; switch to PostToolUse plus a permissions.allow rule",
+      "Each tool sends a different input shape, so Grep or Bash bypass it; add a permissions.deny rule",
+      "file_path is unavailable until after execution; read it in a SessionStart hook instead",
+    ],
+    correctIndex: 2,
+    explanation:
+      "Read sends file_path, but Grep sends pattern and a search path and Bash sends command, so a file_path check misses a project-wide grep or a cat in Bash. Combining the hook with a permissions.deny rule like Read(**/.env) applies uniformly across tools.",
+  },
+  {
+    id: "d3-052",
+    source: "ai-generated",
+    domain: "claude-code-config",
+    scenario: "developer-productivity",
+    question:
+      "Which hook event runs when Claude Code has finished responding, making it suitable for an end-of-turn notification?",
+    options: [
+      "PreCompact",
+      "Stop",
+      "UserPromptSubmit",
+      "Notification",
+    ],
+    correctIndex: 1,
+    explanation:
+      "The Stop hook runs when Claude Code has finished responding. Notification fires when Claude needs permission or after 60 seconds idle, UserPromptSubmit runs before processing a submitted prompt, and PreCompact runs before a compact operation.",
+  },
+  {
+    id: "d3-053",
+    source: "ai-generated",
+    domain: "claude-code-config",
+    scenario: "developer-productivity",
+    question:
+      "A developer is unsure of the exact stdin structure their hook will receive because it varies by hook event and matcher. What technique is recommended to discover it?",
+    options: [
+      "Read the hook schema printed by the /hooks command before writing the script",
+      "Run claude --debug, which prints every hook payload to the terminal",
+      "Add a temporary hook whose command writes stdin to a file, e.g. jq . > log.json",
+      "Set hook_event_name in settings.json so Claude sends a fixed payload shape",
+    ],
+    correctIndex: 2,
+    explanation:
+      "Because the stdin payload differs by hook event and, for tool hooks, by the tool that was called, a helper hook with a command like jq . > post-log.json captures the exact input so you can inspect what your real command should parse.",
+  },
+  {
+    id: "d3-054",
+    source: "ai-generated",
+    domain: "claude-code-config",
+    scenario: "developer-productivity",
+    question:
+      "Claude Code security guidance recommends absolute paths for hook scripts, which makes a shared settings.json hard to commit. How did the course project resolve this?",
+    options: [
+      "Store hooks only in ~/.claude/settings.json so paths stay machine-local",
+      "Use a settings.example.json with a $PWD placeholder that a setup script rewrites locally",
+      "Switch all hook commands to relative paths and document the tradeoff",
+      "Commit settings.local.json and let each user hand-edit the absolute paths",
+    ],
+    correctIndex: 1,
+    explanation:
+      "Absolute paths mitigate path interception and binary planting but differ per machine. The project ships settings.example.json with a $PWD placeholder; npm run setup runs an init script that substitutes the real project path and writes settings.local.json.",
+  },
+  {
+    id: "d3-055",
+    source: "ai-generated",
+    domain: "claude-code-config",
+    scenario: "code-generation",
+    question:
+      "Which package should be installed to run Claude Code's agent loop programmatically from a Node script, and what is the entry point?",
+    options: [
+      "@anthropic-ai/claude-code, imported as the createAgent function",
+      "@anthropic-ai/sdk, using the messages.stream method",
+      "@anthropic-ai/claude-agent-sdk, using the query function",
+      "claude-code-sdk, using the runSession generator",
+    ],
+    correctIndex: 2,
+    explanation:
+      "The Agent SDK package is @anthropic-ai/claude-agent-sdk and you drive it with the query function, which streams the same conversation events as the CLI. The similarly named @anthropic-ai/claude-code is the CLI itself and cannot be imported.",
+  },
+  {
+    id: "d3-056",
+    source: "ai-generated",
+    domain: "claude-code-config",
+    scenario: "code-generation",
+    question:
+      "In the Agent SDK, how do you narrow Claude to read-only operations, and what CLI flag is this equivalent to?",
+    options: [
+      "Pass options.allowedTools with the permitted tools; equivalent to --allowedTools",
+      "Set options.readOnly to true; equivalent to the --print flag",
+      "Pass options.denyTools listing Write and Edit; equivalent to --no-write",
+      "Set permissions.deny in settings.json; equivalent to --output-format json",
+    ],
+    correctIndex: 0,
+    explanation:
+      "By default the SDK has the full tool set. Passing options.allowedTools (for example Read and Glob) restricts it, which is the SDK equivalent of the CLI's --allowedTools flag.",
+  },
+  {
+    id: "d3-057",
+    source: "ai-generated",
+    domain: "claude-code-config",
+    scenario: "code-generation",
+    question:
+      "A developer wants Claude to focus on a specific authentication file during a chat. Which Claude Code technique directly includes that file's contents in the request?",
+    options: [
+      "Run /init so Claude re-scans and indexes the auth files",
+      "Use an @ mention with the file path, such as 'how does auth work? @auth'",
+      "Press Ctrl+V to attach the file to the conversation",
+      "Add the file to .claude/rules/ so it is injected automatically",
+    ],
+    correctIndex: 1,
+    explanation:
+      "Typing @ followed by a path includes that file's contents in the request; Claude shows matching files to pick from. The same @ syntax inside CLAUDE.md includes a file's contents in every request automatically.",
+  },
+  {
+    id: "d3-058",
+    source: "ai-generated",
+    domain: "claude-code-config",
+    scenario: "developer-productivity",
+    question:
+      "After debugging a tangent, a developer wants to drop that distracting back-and-forth but keep Claude's earlier understanding of the codebase. Which control fits best?",
+    options: [
+      "/clear, which starts fresh while keeping prior context available",
+      "/compact, which deletes all prior messages to free the window",
+      "Escape pressed twice (or /rewind) to jump back to an earlier message",
+      "Ctrl+O, which collapses the reasoning and removes debugging turns",
+    ],
+    correctIndex: 2,
+    explanation:
+      "Pressing Escape twice or typing /rewind shows your sent messages so you can jump back to an earlier point, removing distracting history while preserving valuable earlier context. /compact summarizes everything and /clear starts a new conversation.",
+  },
+  {
+    id: "d3-059",
+    source: "ai-generated",
+    domain: "claude-code-config",
+    scenario: "code-generation",
+    question:
+      "How do effort level and the ultrathink keyword differ in Claude Code?",
+    options: [
+      "ultrathink sets a persistent session level; /effort applies extra reasoning to one prompt",
+      "/effort sets the session reasoning level; ultrathink signals extra thinking for a single prompt",
+      "Both permanently raise reasoning; ultrathink also enables plan mode automatically",
+      "/effort only works in plan mode; ultrathink only works in direct execution mode",
+    ],
+    correctIndex: 1,
+    explanation:
+      "Running /effort sets the session's reasoning level (low is faster and cheaper, max reasons longest). The ultrathink keyword in a prompt signals extra thinking for that single turn without changing the session's effort level.",
+  },
+
+  // ---- Domain 4: Prompt Engineering (Claude API course) ----
+  {
+    id: "d4-087",
+    source: "ai-generated",
+    domain: "prompt-engineering",
+    scenario: "structured-data",
+    question:
+      "Your prompt opens with: 'I was wondering if you could maybe tell me about those configuration files for cloud events?' Applying the 'being clear and direct' technique, which rewrite of the first line is strongest?",
+    options: [
+      "Could you possibly generate an EventBridge configuration file for me?",
+      "I need help understanding EventBridge configuration files in JSON.",
+      "Generate a valid EventBridge rule as JSON that matches EC2 state changes.",
+      "What does a typical EventBridge rule configuration file usually look like?",
+    ],
+    correctIndex: 2,
+    explanation:
+      "Being clear and direct means leading with a direct action verb and stating the exact task without hedging. Use instructions, not questions: 'Generate a valid EventBridge rule...' tells Claude the action, the artifact, and the constraint. The other options are phrased as questions or remain vague.",
+  },
+  {
+    id: "d4-088",
+    source: "ai-generated",
+    domain: "prompt-engineering",
+    question:
+      "The 'being specific' lesson distinguishes Output Quality Guidelines from Process Steps. According to the guidance on when to use each, which statement is correct?",
+    options: [
+      "Use Process Steps in almost every prompt; reserve Quality Guidelines for creative tasks only",
+      "Quality Guidelines and Process Steps are interchangeable and should never be combined",
+      "Quality Guidelines belong only in system prompts; Process Steps belong only in user messages",
+      "Include Quality Guidelines in almost every prompt; add Process Steps for complex reasoning or decision tasks",
+    ],
+    correctIndex: 3,
+    explanation:
+      "The lesson advises always including output quality guidelines as a safety net for consistent results, and adding step-by-step process guidelines specifically for troubleshooting, decision-making, and critical-thinking tasks where Claude should consider multiple angles before answering.",
+  },
+  {
+    id: "d4-089",
+    source: "ai-generated",
+    domain: "prompt-engineering",
+    scenario: "structured-data",
+    question:
+      "You are building a prompt-evaluation pipeline and need 200 representative test cases. The course recommends which approach for assembling this dataset efficiently?",
+    options: [
+      "Generate the dataset programmatically with Claude, using a faster model like Haiku",
+      "Hand-author all 200 cases to guarantee maximum diversity and correctness",
+      "Reuse production logs only, since synthetic cases never reflect real inputs",
+      "Generate cases with the highest-quality model at temperature 0 for accuracy",
+    ],
+    correctIndex: 0,
+    explanation:
+      "The course shows datasets can be built by hand or generated automatically by Claude, and that test-data generation is a perfect place to use a faster, cheaper model like Haiku since the task does not require the strongest model. Keeping case counts low during development speeds iteration.",
+  },
+  {
+    id: "d4-090",
+    source: "ai-generated",
+    domain: "prompt-engineering",
+    scenario: "developer-productivity",
+    question:
+      "In the eval pipeline from 'Running the eval', what is the specific responsibility of the run_test_case function relative to run_prompt and run_eval?",
+    options: [
+      "It loads dataset.json and iterates over every test case in the file",
+      "It merges the prompt template with the test case input and returns raw output",
+      "It calls run_prompt for one case, then grades that output and returns a score",
+      "It averages all individual scores into one final evaluation metric",
+    ],
+    correctIndex: 2,
+    explanation:
+      "run_prompt merges the template with one test case's input and returns Claude's output. run_test_case orchestrates a single case: it calls run_prompt, then grades the result and returns output, test_case, and score. run_eval loads the dataset and loops run_test_case over every case.",
+  },
+  {
+    id: "d4-091",
+    source: "ai-generated",
+    domain: "prompt-engineering",
+    question:
+      "Following the 'typical eval workflow', a baseline prompt scores 7.66 averaged across the dataset. You add a guidance sentence and rerun the entire pipeline, getting 8.7. What does this five-step workflow primarily give you?",
+    options: [
+      "A guarantee the new prompt never regresses on any unseen production input",
+      "An objective, repeatable metric to compare prompt versions before iterating",
+      "A way to eliminate the need for any code-based or model-based grader",
+      "Proof that higher temperature always raises the average evaluation score",
+    ],
+    correctIndex: 1,
+    explanation:
+      "The typical workflow (draft, create dataset, feed through Claude, feed through grader, change prompt and repeat) produces an average score that serves as an objective baseline. Re-running after a change shows whether the modification measurably improved performance, enabling data-driven iteration rather than guessing.",
+  },
+  {
+    id: "d4-092",
+    source: "ai-generated",
+    domain: "prompt-engineering",
+    scenario: "conversational-architecture",
+    question:
+      "A user asks Claude 'What is quantum computing?', gets a good answer, then sends 'Write another sentence' and receives an unrelated sentence. Why, and what is the fix?",
+    options: [
+      "Temperature was too high; lower it so Claude recalls the prior topic",
+      "The system prompt expired; refresh it before every follow-up message",
+      "max_tokens truncated the memory; raise max_tokens to retain prior turns",
+      "The API is stateless; resend the full messages list including the prior assistant turn",
+    ],
+    correctIndex: 3,
+    explanation:
+      "Each API request is independent with no server-side memory. To maintain context you must manually maintain the messages list and resend the entire history, appending Claude's prior response as an assistant message before adding the next user message.",
+  },
+  {
+    id: "d4-093",
+    source: "ai-generated",
+    domain: "prompt-engineering",
+    question:
+      "Which statement about the client.messages.create() parameters, as taught in 'Making a request', is accurate?",
+    options: [
+      "max_tokens is a target length Claude tries to reach in every response",
+      "model, max_tokens, and messages are the three core required parameters",
+      "messages may contain a dictionary with role set to 'system' for instructions",
+      "system is required on every call and cannot be omitted from the request",
+    ],
+    correctIndex: 1,
+    explanation:
+      "The create function's three key parameters are model, max_tokens, and messages. max_tokens is a safety limit, not a target: Claude writes what it deems appropriate and only stops early if it hits the cap. The system prompt is a separate top-level parameter, not a message role.",
+  },
+  {
+    id: "d4-094",
+    source: "ai-generated",
+    domain: "prompt-engineering",
+    question:
+      "You build a reusable chat() helper that accepts an optional system prompt. Why must the code conditionally add the system key instead of always passing system=system?",
+    options: [
+      "The Anthropic API rejects system=None, so it must be included only when set",
+      "Passing system=None silently doubles token cost on every request made",
+      "system must always be the first element inside the messages list array",
+      "The API requires system to be merged into the final user message content",
+    ],
+    correctIndex: 0,
+    explanation:
+      "system is an optional top-level parameter. The API does not accept system=None, so a flexible chat function builds the params dict and adds the system key only when a system prompt was actually provided.",
+  },
+  {
+    id: "d4-095",
+    source: "ai-generated",
+    domain: "prompt-engineering",
+    scenario: "structured-data",
+    question:
+      "After running an eval, you want to strengthen a prompt that handles a tricky JSON-formatting edge case. The 'providing examples' lesson recommends sourcing few-shot examples how?",
+    options: [
+      "Invent plausible ideal outputs by hand so they cover untested scenarios",
+      "Use the lowest-scoring outputs so Claude learns what mistakes to avoid",
+      "Take highest-scoring eval input/output pairs and explain why each is ideal",
+      "Average several mid-scoring outputs to create one balanced example pair",
+    ],
+    correctIndex: 2,
+    explanation:
+      "The lesson recommends mining your highest-scoring eval outputs (e.g., those that scored 10) and reusing those input/output pairs as few-shot examples, wrapped in XML tags, with added context explaining why the output is ideal so Claude learns the reasoning, not just the format.",
+  },
+  {
+    id: "d4-096",
+    source: "ai-generated",
+    domain: "prompt-engineering",
+    scenario: "ci-cd",
+    question:
+      "Your code grader must score generated output for the 'valid syntax' criterion across Python, JSON, and Regex. How does the course implement these validators?",
+    options: [
+      "Send the output to a model grader and ask it to estimate syntactic validity",
+      "Attempt to parse the output; return 10 if parsing succeeds, 0 if it raises",
+      "Count syntax keywords and scale the score linearly from 1 to 10 by count",
+      "Compare the output character-by-character against a reference golden answer",
+    ],
+    correctIndex: 1,
+    explanation:
+      "Code-based syntax validators try to parse the output (json.loads, ast.parse, re.compile). Successful parsing returns 10; a parse error returns 0. Code graders handle deterministic checks like format and syntax, while a model grader assesses task-following quality, and the scores are combined.",
+  },
+
+  // ---- Domain 5: Context Management (Claude API features) ----
+  {
+    id: "d5-107",
+    source: "ai-generated",
+    domain: "context-management",
+    scenario: "structured-data",
+    question:
+      "An app sends scanned invoices to Claude for vision analysis. What are the correct image input constraints to design around?",
+    options: [
+      "Up to 100 images per request, 5MB max per image, base64 or URL source",
+      "Up to 20 images per request, 10MB max per image, base64 source only",
+      "Unlimited images per request capped by the overall context-window size",
+      "Up to 100 images per request, 5MB max per image, URL source required",
+    ],
+    correctIndex: 0,
+    explanation:
+      "Claude vision allows up to 100 images across all messages in a single request, max 5MB per image, supplied either as base64 encoding or a URL. Image tokens are roughly (width px x height px) / 750.",
+  },
+  {
+    id: "d5-108",
+    source: "ai-generated",
+    domain: "context-management",
+    scenario: "structured-data",
+    question:
+      "A team gets inaccurate counts when asking Claude 'How many items are in this image?'. What is the recommended fix from the image-support lesson?",
+    options: [
+      "Upscale every image to the 8000px maximum before sending it",
+      "Switch the image block source from base64 to a hosted URL",
+      "Split the photo into many small tiles and send each separately",
+      "Provide a step-by-step methodology and one-shot example in the prompt",
+    ],
+    correctIndex: 3,
+    explanation:
+      "Image accuracy improves with the same prompt-engineering techniques used for text: give Claude an explicit analysis methodology, break the task into steps, and include one-shot or multi-shot examples. Resolution or transport changes do not address reasoning errors.",
+  },
+  {
+    id: "d5-109",
+    source: "ai-generated",
+    domain: "context-management",
+    scenario: "customer-support",
+    question:
+      "You need Claude to summarize a multi-page PDF that contains text, tables, and charts. How do you supply it through the Messages API?",
+    options: [
+      "Run OCR yourself and paste the extracted plain text into the prompt",
+      "Send a document block, source type base64, media_type application/pdf",
+      "Send an image block per page using media_type image/png for each one",
+      "Upload to a vector store first; PDFs cannot be passed in a message",
+    ],
+    correctIndex: 1,
+    explanation:
+      "Claude reads PDFs natively via a document content block with source type base64 and media_type application/pdf. It interprets text, embedded images and charts, tables, and document structure without external OCR or pre-chunking.",
+  },
+  {
+    id: "d5-110",
+    source: "ai-generated",
+    domain: "context-management",
+    scenario: "customer-support",
+    question:
+      "A compliance team must verify every answer against the source contract. Which document-block configuration enables that traceability?",
+    options: [
+      "Append 'cite your sources' to the system prompt for each request",
+      "Set tool_choice to a retrieval tool that returns page references",
+      "Add title and citations enabled true to the document block",
+      "Enable extended thinking so Claude shows the reasoning trail",
+    ],
+    correctIndex: 2,
+    explanation:
+      "Citations are enabled by adding a title and citations enabled on the document block. Claude then returns structured citations including cited_text, document index or title, and page numbers (PDF) or character positions (plain text).",
+  },
+  {
+    id: "d5-111",
+    source: "ai-generated",
+    domain: "context-management",
+    scenario: "structured-data",
+    question:
+      "An analyst wants Claude to compute churn drivers from a 200MB CSV and return a chart. Which Anthropic features support this, given the execution sandbox has no network access?",
+    options: [
+      "Web search tool to fetch the CSV, then inline base64 in the message",
+      "Files API to upload the CSV plus the code execution tool to analyze it",
+      "Prompt caching to store the CSV so repeated requests can reread it",
+      "MCP resource server exposing the CSV rows as individual tool results",
+    ],
+    correctIndex: 1,
+    explanation:
+      "Upload the CSV via the Files API to get a file_id, reference it with a container_upload block, and enable the code execution tool. Claude runs Python in an isolated Docker container (no network), so the Files API is how data moves in and generated plots come out.",
+  },
+  {
+    id: "d5-112",
+    source: "ai-generated",
+    domain: "context-management",
+    scenario: "developer-productivity",
+    question:
+      "An app asks many questions about the same large document and adds a cache breakpoint after it. How does billing for the cached prefix work?",
+    options: [
+      "The cache write and every cache read are billed at the same base rate",
+      "Cached prefixes are free; you only pay for tokens after the breakpoint",
+      "Initial request writes the cache; later requests read it more cheaply",
+      "Caching is billed as a flat monthly fee independent of request volume",
+    ],
+    correctIndex: 2,
+    explanation:
+      "The first request writes the preprocessing work to the cache and follow-up requests read from it, making the cached portion faster and cheaper. The benefit only applies while the prefix stays identical and within the one-hour cache lifetime.",
+  },
+  {
+    id: "d5-113",
+    source: "ai-generated",
+    domain: "context-management",
+    scenario: "multi-agent-research",
+    question:
+      "A research retriever wraps a vector index and a BM25 index behind one search() call. Why combine both indexes instead of using vector search alone?",
+    options: [
+      "Vector search cannot scale past a few thousand stored chunks",
+      "BM25 removes the need to generate any embeddings for the corpus",
+      "It eliminates the chunking step required by semantic retrieval",
+      "Lexical search catches exact terms (IDs) semantic search may miss",
+    ],
+    correctIndex: 3,
+    explanation:
+      "Semantic search understands meaning but can miss exact tokens like incident IDs; BM25 weights rare exact terms highly. The Retriever forwards the query to both shared-API indexes and merges results with reciprocal rank fusion for the best of both.",
+  },
+  {
+    id: "d5-114",
+    source: "ai-generated",
+    domain: "context-management",
+    scenario: "developer-productivity",
+    question:
+      "A team building a RAG pipeline asks which embedding model to call from the Anthropic SDK. What is the accurate guidance from the course?",
+    options: [
+      "Anthropic does not provide embeddings; use a provider such as VoyageAI",
+      "Use the Anthropic embeddings endpoint with the claude embedding model",
+      "Embeddings are generated automatically whenever citations are enabled",
+      "The Files API returns an embedding vector alongside each uploaded file",
+    ],
+    correctIndex: 0,
+    explanation:
+      "Anthropic does not currently offer embedding generation. The course recommends a separate provider such as VoyageAI (e.g., voyage-3-large) with its own API key for producing chunk and query embeddings.",
+  },
 ];

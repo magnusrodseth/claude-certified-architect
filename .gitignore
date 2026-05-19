@@ -7,3 +7,6 @@ generated_imgs
 
 # Pi local agent state
 .pi/
+
+# Browser automation snapshots
+.playwright-cli/
