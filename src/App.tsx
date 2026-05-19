@@ -1,4 +1,5 @@
-import { useCallback } from "react";
+import { useCallback, useState } from "react";
+import { motion, AnimatePresence } from "motion/react";
 import { Routes, Route, useNavigate, Navigate } from "react-router-dom";
 import "./App.css";
 import { useQuiz } from "./hooks/useQuiz";
@@ -463,6 +464,108 @@ interface QuizScreenProps {
   goHome: () => void;
 }
 
+function CopyForAI({
+  question,
+  selectedAnswer,
+}: {
+  question: NonNullable<ReturnType<typeof useQuiz>["currentQuestion"]>;
+  selectedAnswer: number | null;
+}) {
+  const [copied, setCopied] = useState(false);
+  const [helpOpen, setHelpOpen] = useState(false);
+
+  const buildPrompt = () => {
+    const letters = ["A", "B", "C", "D"];
+    const opts = question.shuffledOptions
+      .map((o, i) => `${letters[i]}. ${o}`)
+      .join("\n");
+    const correctL = letters[question.shuffledCorrectIndex];
+    const correctText =
+      question.shuffledOptions[question.shuffledCorrectIndex];
+    const mine =
+      selectedAnswer != null
+        ? `${letters[selectedAnswer]}. ${question.shuffledOptions[selectedAnswer]}`
+        : "(not answered)";
+    return [
+      "I'm studying for the Claude Certified Architect exam. Help me deeply understand the question below.",
+      "Explain why the correct answer is right and why each other option is wrong, then spell out the underlying nuance so I can recognize this concept in different scenarios. Be concise and concrete.",
+      "",
+      `Question:\n${question.question}`,
+      "",
+      `Options:\n${opts}`,
+      "",
+      `My answer: ${mine}`,
+      `Correct answer: ${correctL}. ${correctText}`,
+      "",
+      `Provided explanation:\n${question.explanation}`,
+    ].join("\n");
+  };
+
+  const onCopy = async () => {
+    const text = buildPrompt();
+    try {
+      await navigator.clipboard.writeText(text);
+    } catch {
+      const ta = document.createElement("textarea");
+      ta.value = text;
+      ta.style.position = "fixed";
+      ta.style.opacity = "0";
+      document.body.appendChild(ta);
+      ta.select();
+      try {
+        document.execCommand("copy");
+      } finally {
+        document.body.removeChild(ta);
+      }
+    }
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  return (
+    <div className="ai-help-row">
+      <motion.button
+        type="button"
+        className={`btn copy-ai-btn ${copied ? "copied" : ""}`}
+        onClick={onCopy}
+        whileTap={{ scale: 0.96 }}
+        animate={copied ? { scale: [1, 1.06, 1] } : { scale: 1 }}
+        transition={{ duration: 0.28, ease: "easeOut" }}
+      >
+        <AnimatePresence mode="wait" initial={false}>
+          <motion.span
+            key={copied ? "copied" : "idle"}
+            className="copy-ai-label"
+            initial={{ opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -6 }}
+            transition={{ duration: 0.18, ease: "easeOut" }}
+          >
+            {copied ? "✓ Copied to clipboard" : "Copy for AI agent"}
+          </motion.span>
+        </AnimatePresence>
+      </motion.button>
+      <button
+        type="button"
+        className="ai-help-toggle"
+        aria-label="What does Copy for AI agent do?"
+        aria-expanded={helpOpen}
+        onClick={() => setHelpOpen((v) => !v)}
+      >
+        ?
+      </button>
+      {helpOpen && (
+        <p className="ai-help-text" role="note">
+          Copies this question, all four options, the correct answer, your
+          answer, and the explanation, plus a prompt asking an AI assistant
+          to explain the nuance. Paste it into Claude or any AI chat to dig
+          deeper.
+        </p>
+      )}
+    </div>
+  );
+}
+
 function QuizScreen({
   currentQuestion,
   activeQuestions,
@@ -550,6 +653,10 @@ function QuizScreen({
                 This is an AI-generated practice question, not official exam-guide material.
               </p>
             )}
+            <CopyForAI
+              question={currentQuestion}
+              selectedAnswer={selectedAnswer}
+            />
           </div>
         )}
         <div className="quiz-actions">
