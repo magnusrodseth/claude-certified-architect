@@ -5,6 +5,7 @@ import { useQuiz } from "./hooks/useQuiz";
 import { useProgress } from "./hooks/useProgress";
 import { ScoreChart } from "./components/ScoreChart";
 import { DomainRadar } from "./components/DomainRadar";
+import { generatedQuestions } from "./generatedQuestions";
 import { DOMAIN_LABELS, DOMAIN_WEIGHTS, SCENARIO_LABELS } from "./types";
 import type { Domain, Scenario, QuizState, Question } from "./types";
 
@@ -12,6 +13,13 @@ function App() {
   const navigate = useNavigate();
   const { stats, recordAnswer, getSmartReviewQuestions, clearProgress } =
     useProgress();
+  const recordOfficialAnswer = useCallback(
+    (questionId: string, correct: boolean, question: Question) => {
+      if (question.source === "ai-generated") return;
+      recordAnswer(questionId, correct);
+    },
+    [recordAnswer]
+  );
 
   const {
     currentQuestion,
@@ -29,7 +37,7 @@ function App() {
     clearHistory,
     hasActiveSession,
     state,
-  } = useQuiz(recordAnswer);
+  } = useQuiz(recordOfficialAnswer);
 
   const startQuiz = useCallback(
     (
@@ -311,6 +319,17 @@ function HomeScreen({
                 Domains where you scored {"<"}70%
               </div>
             </button>
+            <button
+              className="mode-card ai-card"
+              onClick={() =>
+                startQuiz("ai-practice", undefined, undefined, generatedQuestions)
+              }
+            >
+              <div className="mode-title">AI Practice</div>
+              <div className="mode-desc">
+                Generated exam-style questions, separate from official study-guide modes
+              </div>
+            </button>
           </div>
         </section>
 
@@ -474,11 +493,16 @@ function QuizScreen({
             style={{ width: `${(progress / total) * 100}%` }}
           />
         </div>
-        {currentQuestion.scenario && (
-          <div className="scenario-badge">
-            Scenario: {SCENARIO_LABELS[currentQuestion.scenario]}
-          </div>
-        )}
+        <div className="question-badges">
+          {currentQuestion.scenario && (
+            <div className="scenario-badge">
+              Scenario: {SCENARIO_LABELS[currentQuestion.scenario]}
+            </div>
+          )}
+          {currentQuestion.source === "ai-generated" && (
+            <div className="ai-badge">AI-generated practice</div>
+          )}
+        </div>
         <h2 className="question-text">{currentQuestion.question}</h2>
         <div className="options">
           {currentQuestion.shuffledOptions.map((opt, i) => {
@@ -512,6 +536,11 @@ function QuizScreen({
                 : "Incorrect"}
             </div>
             <p>{currentQuestion.explanation}</p>
+            {currentQuestion.source === "ai-generated" && (
+              <p className="ai-disclaimer">
+                This is an AI-generated practice question, not official exam-guide material.
+              </p>
+            )}
           </div>
         )}
         <div className="quiz-actions">

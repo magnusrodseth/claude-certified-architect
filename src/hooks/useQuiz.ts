@@ -93,7 +93,7 @@ const defaultState: QuizState = {
 };
 
 export function useQuiz(
-  onAnswer?: (questionId: string, correct: boolean) => void
+  onAnswer?: (questionId: string, correct: boolean, question: Question) => void
 ) {
   const saved = loadSession();
 
@@ -171,7 +171,7 @@ export function useQuiz(
         answers: { ...s.answers, [currentQuestion.id]: index },
       }));
       const correct = index === currentQuestion.shuffledCorrectIndex;
-      onAnswer?.(currentQuestion.id, correct);
+      onAnswer?.(currentQuestion.id, correct, currentQuestion);
     },
     [currentQuestion, onAnswer]
   );

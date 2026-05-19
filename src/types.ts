@@ -1,5 +1,6 @@
 export interface Question {
   id: string;
+  source?: "exam-guide" | "ai-generated";
   domain: Domain;
   scenario?: Scenario;
   question: string;
@@ -60,7 +61,7 @@ export interface QuizState {
   currentQuestionIndex: number;
   answers: Record<string, number | null>;
   flagged: Set<string>;
-  mode: "domain" | "scenario" | "exam" | "review" | "all";
+  mode: "domain" | "scenario" | "exam" | "review" | "all" | "ai-practice";
   selectedDomain?: Domain;
   selectedScenario?: Scenario;
   startedAt?: number;

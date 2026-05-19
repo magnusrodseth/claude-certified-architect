@@ -6,7 +6,7 @@ Interactive quiz app for the **Claude Certified Architect: Foundations** certifi
 
 ## Features
 
-- **153+ scenario-based questions** across all 5 exam domains
+- **173 exam-guide-based questions** across all 5 exam domains
 - **Randomized option order** to prevent pattern memorization
 - **Smart Review mode** with spaced-repetition-lite prioritization
 - **Progress tracking** with per-question mastery (localStorage)
@@ -14,6 +14,11 @@ Interactive quiz app for the **Claude Certified Architect: Foundations** certifi
 - **Session persistence**: resume interrupted quizzes
 - **Practice Exam mode**: 40 questions simulating exam conditions
 - **Study by domain or scenario**
+- **AI Practice mode** with clearly labeled generated questions kept separate from exam-guide-based modes
+
+## Question Sources
+
+The core study modes use questions based on the exam guide and study materials. AI Practice mode uses a separate static bank of generated questions. These questions are clearly labeled in the UI and are not mixed into All Questions, Practice Exam, Smart Review, Weak Domains, domain mode, or scenario mode.
 
 ## Exam Domains
 
