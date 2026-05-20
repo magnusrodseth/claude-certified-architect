@@ -3068,6 +3068,414 @@ export const questions: Question[] = [
     explanation:
       "The subagent's system prompt should specify how it reports findings back to the main agent, including obstacles it could not resolve, so the main thread can decide next steps. Silent guessing hides information, infinite retries waste work, and having it spawn its own child subagents to bypass the blocker is uncontrolled and wasteful.",
   },
+  {
+    id: "d1-087",
+    source: "ai-generated",
+    domain: "agentic-architecture",
+    scenario: "multi-agent-research",
+    question:
+      "During testing, combined outputs from the web search agent (85K tokens including page content) and the document analysis agent (70K tokens including reasoning chains) total 155K tokens, but the synthesis agent performs optimally with inputs under 50K tokens. What's the most effective solution?",
+    options: [
+      "Add an intermediate summarization agent that condenses findings before passing to synthesis.",
+      "Store findings in a vector database and give the synthesis agent retrieval tools to query during its work.",
+      "Have the synthesis agent process findings in sequential batches, maintaining running state between calls.",
+      "Modify upstream agents to return structured data (key facts, citations, relevance scores) instead of verbose content and reasoning.",
+    ],
+    correctIndex: 3,
+    explanation:
+      "Modifying upstream agents to return structured data (key facts, citations, relevance scores) addresses the root cause by reducing token volume at the source while preserving essential information. This eliminates verbose page content and reasoning chains that inflate token counts without adding value for the synthesis step. An intermediate summarizer adds another lossy hop, vector retrieval shifts the problem to query design and may miss important context, and batched processing complicates synthesis and risks losing cross-batch connections.",
+  },
+  {
+    id: "d1-088",
+    source: "ai-generated",
+    domain: "agentic-architecture",
+    scenario: "multi-agent-research",
+    question:
+      "The document analysis subagent frequently encounters failures when processing PDF files: some have corrupted sections causing parsing exceptions, others are password-protected, and occasionally the parsing library times out on large files. Currently, any exception immediately terminates the subagent and returns an error to the coordinator, which must decide whether to retry, skip the document, or fail the entire research task. This is causing excessive coordinator involvement in routine error handling. What's the most effective architectural improvement?",
+    options: [
+      "Create a dedicated error-handling agent that monitors all subagent failures via a shared queue and makes recovery decisions independently, dispatching retry commands directly to subagents.",
+      "Have the subagent implement local recovery for transient failures and only propagate errors it cannot resolve to the coordinator, including what was attempted and any partial results obtained.",
+      "Have the coordinator validate all documents before dispatching to the subagent, rejecting documents likely to cause failures to ensure the subagent only receives processable files.",
+      "Configure the subagent to always return partial results with success status, embedding error details in metadata. The coordinator treats all responses as successful and filters problematic items during synthesis.",
+    ],
+    correctIndex: 1,
+    explanation:
+      "Handling errors at the lowest level capable of resolving them follows sound multi-agent design: the subagent recovers from transient failures locally and only escalates truly unresolvable issues, sharing what it attempted and any partial results so the coordinator can make an informed decision. A separate error-handler agent duplicates context and adds coordination complexity, pre-validation can't anticipate all failure modes, and masking errors as success risks silent data quality issues during synthesis.",
+  },
+  {
+    id: "d1-089",
+    source: "ai-generated",
+    domain: "agentic-architecture",
+    scenario: "multi-agent-research",
+    question:
+      "The web search and document analysis agents have both completed their tasks and returned findings to the coordinator. What is the appropriate next step for producing an integrated research output?",
+    options: [
+      "Each agent directly sends its findings to the report generation agent, bypassing the coordinator.",
+      "The coordinator concatenates the raw outputs from both agents and returns them as the final result.",
+      "The coordinator passes both sets of findings to the synthesis agent for unified integration.",
+      "The document analysis agent requests the web search results and merges them internally.",
+    ],
+    correctIndex: 2,
+    explanation:
+      "The orchestrator-workers pattern keeps centralized control in the coordinator: it collects results from subagents and routes them to the appropriate next component, in this case the synthesis agent, which is designed to unify and integrate findings into a coherent output. Bypassing the coordinator breaks the orchestration boundary, raw concatenation skips the integration step entirely, and having one specialist subagent merge another's output blurs role responsibilities.",
+  },
+  {
+    id: "d1-090",
+    source: "ai-generated",
+    domain: "agentic-architecture",
+    scenario: "multi-agent-research",
+    question:
+      "When designing the system, you gave the document analysis agent access to a general-purpose fetch_url tool so it could load documents from URLs. Production logs reveal this agent now frequently fetches search engine result pages to conduct ad-hoc web searches, behavior that should route through the web search agent. This causes inconsistent results. What's the most effective fix?",
+    options: [
+      "Remove fetch_url from the document analysis agent and route all URL loading through the coordinator to the web search agent.",
+      "Implement filtering that blocks fetch_url calls to known search engine domains while allowing other URLs.",
+      "Add instructions to the document analysis agent's prompt clarifying it should only use fetch_url for loading document URLs, not searching.",
+      "Replace fetch_url with a load_document tool that validates URLs point to document formats.",
+    ],
+    correctIndex: 3,
+    explanation:
+      "Replacing the general-purpose tool with a document-specific load_document tool that validates URLs point to document formats constrains capability at the interface level, making the undesired search behavior impossible rather than merely discouraged. This follows the principle of least privilege. Routing all URL loads through the coordinator adds latency and complexity for legitimate document fetches, domain blocklists are brittle and easily evaded, and prompt instructions are suggestions the model can drift from.",
+  },
+  {
+    id: "d1-091",
+    source: "ai-generated",
+    domain: "agentic-architecture",
+    scenario: "multi-agent-research",
+    question:
+      "Production logs reveal a consistent pattern: requests to 'analyze the quarterly report I uploaded' are routed to the web search agent 45% of the time instead of the document analysis agent. Examining the tool definitions, you find the web search agent has an analyze_content tool described as 'analyzes content and extracts key information,' while the document analysis agent has an analyze_document tool described as 'analyzes documents and extracts key information.' How should you address this misrouting?",
+    options: [
+      "Add few-shot examples to the coordinator's prompt showing correct routing: 'User uploads quarterly report → document analysis agent' and 'User asks about a webpage → web search agent.'",
+      "Add a pre-routing classifier that determines whether the user is referencing uploaded files or web content before the coordinator makes delegation decisions.",
+      "Rename the web search tool to extract_web_results and update its description to 'processes and returns information retrieved from web searches and URLs.'",
+      "Expand the document analysis tool's description to include example use cases like 'Use for uploaded PDFs, Word documents, and spreadsheets' while leaving the web search tool unchanged.",
+    ],
+    correctIndex: 2,
+    explanation:
+      "Renaming the web search tool to extract_web_results and updating its description to clearly reference web searches and URLs eliminates the semantic overlap between the two tools' names and descriptions. Each tool's purpose becomes unambiguous, letting the coordinator correctly distinguish document analysis from web search tasks. Few-shot examples and a pre-routing classifier paper over the underlying tool ambiguity, and expanding only one description still leaves the other tool's wording overlapping.",
+  },
+  {
+    id: "d1-092",
+    source: "ai-generated",
+    domain: "agentic-architecture",
+    scenario: "multi-agent-research",
+    question:
+      "Production monitoring reveals inconsistent synthesis quality. When aggregated results total ~75K tokens, the synthesis agent reliably cites information from the first 15K tokens (web search headlines and snippets) and the final 10K tokens (document analysis conclusions), but frequently omits critical findings that appear in the middle 50K tokens, even when those findings directly address the research question. How should you restructure the aggregated input?",
+    options: [
+      "Place a key findings summary at the beginning of the aggregated input and organize detailed results with explicit section headers for easier navigation.",
+      "Stream subagent results to the synthesis agent incrementally, processing web search results first to completion before introducing document analysis findings.",
+      "Implement rotation that alternates which subagent's results appear first across different research tasks, ensuring both sources receive primacy positioning equally over time.",
+      "Summarize all subagent outputs to under 20K tokens total before aggregation, ensuring content stays within the model's reliable processing range.",
+    ],
+    correctIndex: 0,
+    explanation:
+      "Placing a key findings summary at the beginning leverages the primacy effect, putting critical information in the most reliably attended position, while explicit section headers help the model navigate and attend to middle-section content. This directly mitigates the 'lost in the middle' phenomenon. Incremental streaming doesn't help once results are aggregated, rotating primacy still leaves middle content under-attended on any given run, and aggressively summarizing to 20K tokens discards detail that may matter for accurate synthesis.",
+  },
+  {
+    id: "d1-093",
+    source: "ai-generated",
+    domain: "agentic-architecture",
+    scenario: "multi-agent-research",
+    question:
+      "A colleague suggests having the document analysis agent send its output directly to the synthesis agent instead of routing through the coordinator. What is the main advantage of keeping the coordinator as the central hub for all subagent communication?",
+    options: [
+      "Routing through the coordinator enables automatic retry logic that direct agent-to-agent calls cannot support.",
+      "Subagents operate with isolated memory, and direct communication would require complex serialization that only the coordinator can perform.",
+      "The coordinator batches multiple subagent requests together, reducing the total number of API calls and overall latency.",
+      "The coordinator can observe all interactions, handle errors consistently, and decide what information each subagent should receive.",
+    ],
+    correctIndex: 3,
+    explanation:
+      "The hub-and-spoke pattern's primary advantage is that the coordinator has centralized visibility into all interactions, applies consistent error handling across the system, and decides exactly what context each subagent receives. Retry logic and serialization aren't unique to coordinator routing, and batching isn't an inherent property of the coordinator pattern. Direct agent-to-agent communication sacrifices observability and the coordinator's ability to filter or shape context per subagent.",
+  },
+  {
+    id: "d1-094",
+    source: "ai-generated",
+    domain: "agentic-architecture",
+    scenario: "multi-agent-research",
+    question:
+      "The web search subagent returns results for only 3 of 5 requested source categories (competitor websites and industry reports succeeded, but news archives and social media feeds timed out). The document analysis subagent successfully processed all provided documents. The synthesis subagent must now produce a findings summary from this mixed-quality input. What's the most effective error propagation strategy?",
+    options: [
+      "Have the synthesis subagent request the coordinator retry the timed-out sources with extended timeouts before proceeding, ensuring complete data coverage before synthesis begins.",
+      "Structure the synthesis output with coverage annotations indicating which findings are well-supported versus which topic areas have gaps due to unavailable sources.",
+      "Proceed with synthesis using only the successful sources, generating output without indicating which data was unavailable.",
+      "Have the synthesis subagent return an error to the coordinator indicating incomplete upstream data, triggering a full retry or task failure.",
+    ],
+    correctIndex: 1,
+    explanation:
+      "Coverage annotations embody graceful degradation with transparency: downstream consumers and end users can see which findings are well-supported and which topic areas have gaps due to unavailable sources. This preserves the value of completed work while propagating uncertainty so informed decisions can be made about confidence. Forcing retries before any synthesis blocks useful output, silently dropping the gaps hides quality issues, and failing the whole task wastes successful subagent work.",
+  },
+  {
+    id: "d1-095",
+    source: "ai-generated",
+    domain: "agentic-architecture",
+    scenario: "multi-agent-research",
+    question:
+      "After running the system on the topic 'impact of AI on creative industries,' you observe that each subagent completes successfully: the web search agent finds relevant articles, the document analysis agent summarizes papers correctly, and the synthesis agent produces coherent output. However, the final reports cover only visual arts, completely missing music, writing, and film production. When you examine the coordinator's logs, you see it decomposed the topic into three subtasks: 'AI in digital art creation,' 'AI in graphic design,' and 'AI in photography.' What is the most likely root cause?",
+    options: [
+      "The document analysis agent is filtering out sources related to non-visual creative industries due to overly restrictive relevance criteria.",
+      "The web search agent's queries are not comprehensive enough and need to be expanded to cover more creative industry sectors.",
+      "The synthesis agent lacks instructions for identifying coverage gaps in the findings it receives from other agents.",
+      "The coordinator agent's task decomposition is too narrow, resulting in subagent assignments that don't cover all relevant domains of the topic.",
+    ],
+    correctIndex: 3,
+    explanation:
+      "The coordinator's logs directly show it decomposed the broad topic into only three visual arts subtasks (digital art, graphic design, photography), entirely omitting music, writing, and film. Since each subagent executed its assigned task correctly, the narrow decomposition by the coordinator is the root cause of the missing coverage. Downstream agents can only operate on what the coordinator delegates to them.",
+  },
+  {
+    id: "d1-096",
+    source: "ai-generated",
+    domain: "agentic-architecture",
+    scenario: "multi-agent-research",
+    question:
+      "The document analysis agent discovers that two credible sources contain directly conflicting statistics on a key metric: one government report states 40% growth while an industry analysis states 12% growth. Both sources appear legitimate and the discrepancy could significantly affect the research conclusions. What's the most effective way for the document analysis agent to handle this?",
+    options: [
+      "Include both figures in the analysis output without flagging them as conflicting, allowing the synthesis agent to determine which to use based on the broader research context.",
+      "Halt analysis and escalate to the coordinator immediately, asking it to determine which source is authoritative before the agent continues processing remaining documents.",
+      "Apply source credibility heuristics to select the most likely accurate figure, complete the analysis using that value, and include a footnote mentioning the discrepancy.",
+      "Complete the document analysis with both figures included, explicitly annotate the conflict with source attribution, and let the coordinator decide how to reconcile before passing to synthesis.",
+    ],
+    correctIndex: 3,
+    explanation:
+      "Respecting separation of concerns, the document analysis agent completes its primary task without blocking, preserves both conflicting data points with explicit source attribution, and defers the reconciliation decision to the coordinator, which has the broader context needed to resolve the conflict. Including both figures unflagged hides the discrepancy from downstream agents, halting and escalating mid-task blocks unrelated work, and silently picking one value via heuristics removes the coordinator's ability to make an informed call.",
+  },
+  {
+    id: "d1-097",
+    source: "ai-generated",
+    domain: "agentic-architecture",
+    scenario: "multi-agent-research",
+    question:
+      "During testing, you observe that the synthesis agent frequently needs to verify specific claims while combining findings. Currently, when verification is needed, the synthesis agent returns control to the coordinator, which invokes the web search agent, then re-invokes synthesis with results. This adds 2-3 round trips per task and increases latency by 40%. Your evaluation shows that 85% of these verifications are simple fact-checks (dates, names, statistics) while 15% require deeper investigation. What's the most effective approach to reduce overhead while maintaining system reliability?",
+    options: [
+      "Give the synthesis agent a scoped verify_fact tool for simple lookups, while complex verifications continue delegating to the web search agent through the coordinator.",
+      "Have the web search agent proactively cache extra context around each source during initial research, anticipating what the synthesis agent might need to verify.",
+      "Give the synthesis agent access to all web search tools so it can handle any verification need directly without round-trips through the coordinator.",
+      "Have the synthesis agent accumulate all verification needs and return them as a batch to the coordinator at the end of its pass, which then sends them all to the web search agent at once.",
+    ],
+    correctIndex: 0,
+    explanation:
+      "A scoped verify_fact tool handles the 85% of simple lookups (dates, names, statistics) directly, eliminating most round-trips while preserving the coordinator-mediated delegation path for the 15% of complex investigations. This applies the principle of least privilege, keeping the synthesis agent focused on its primary task while reducing latency significantly. Proactive caching can't anticipate every verification, granting full search tools blurs role responsibilities, and batching verifications creates blocking dependencies when later synthesis steps depend on earlier facts.",
+  },
+  {
+    id: "d1-098",
+    source: "ai-generated",
+    domain: "agentic-architecture",
+    scenario: "multi-agent-research",
+    question:
+      "The document analysis subagent encounters a corrupted PDF file it cannot parse. When designing the system's error handling, what is the most effective way to handle this failure?",
+    options: [
+      "Silently skip the corrupted document and continue processing other files to avoid interrupting the workflow.",
+      "Automatically retry parsing the document three times with exponential backoff before reporting failure.",
+      "Return the error with context to the coordinator agent, letting it decide how to proceed.",
+      "Throw an exception that terminates the entire research workflow.",
+    ],
+    correctIndex: 2,
+    explanation:
+      "Returning the error with context to the coordinator lets it make an informed decision (skip the file, try an alternative parsing method, notify the user) while keeping visibility into the failure. Silent skipping hides data quality issues, blind retries don't help with truly corrupted files, and terminating the whole workflow throws away successful work and prevents graceful degradation.",
+  },
+  {
+    id: "d1-099",
+    source: "ai-generated",
+    domain: "agentic-architecture",
+    scenario: "multi-agent-research",
+    question:
+      "During a materials research task, the web search subagent queries three source categories with different outcomes: academic databases returned 15 relevant papers, industry reports returned '0 results found,' and patent databases returned 'Connection timeout.' When designing error propagation to the coordinator, what approach enables the best recovery decisions?",
+    options: [
+      "Report both the timeout and '0 results' as failures requiring coordinator intervention.",
+      "Aggregate outcomes into a single success rate metric (e.g., '67% source coverage') with detailed logs available on request.",
+      "Distinguish access failures (timeout) needing retry decisions from valid empty results ('0 results') representing successful queries.",
+      "Have the subagent retry transient failures internally and only report persistent errors.",
+    ],
+    correctIndex: 2,
+    explanation:
+      "A timeout (access failure) and '0 results' (valid empty result) are semantically distinct outcomes requiring different responses. Distinguishing them lets the coordinator retry the timed-out patent database while accepting the empty industry report results as a valid and informative finding. Treating both as failures triggers unnecessary intervention, aggregating into a single metric obscures the difference, and silent internal retries hide context the coordinator needs for resource and retry decisions.",
+  },
+  {
+    id: "d1-100",
+    source: "ai-generated",
+    domain: "agentic-architecture",
+    scenario: "multi-agent-research",
+    question:
+      "When researching a broad topic, you observe that the web search agent and document analysis agent are both investigating the same subtopics, resulting in significant overlap in their findings. Token usage has nearly doubled without proportionally increasing the breadth or depth of research coverage. What's the most effective way to address this?",
+    options: [
+      "Allow both agents to complete their parallel work, then have the coordinator deduplicate overlapping findings before passing to the synthesis agent.",
+      "Have the coordinator explicitly partition the research space before delegation, assigning distinct subtopics or source types to each agent.",
+      "Implement a shared state mechanism where agents log their current focus area, allowing other agents to dynamically avoid duplicating work in progress.",
+      "Convert to sequential execution where document analysis runs only after web search completes, using the web search findings as context to avoid duplication.",
+    ],
+    correctIndex: 1,
+    explanation:
+      "Explicit partitioning of the research space by the coordinator before delegation addresses the root cause (unclear task boundaries) before any work begins. This preserves the benefits of parallel execution while preventing duplicated effort and wasted tokens. Post-hoc deduplication still pays the full token cost, shared-state coordination adds complexity and races between agents, and forcing sequential execution sacrifices parallelism without guaranteeing better partitioning.",
+  },
+  {
+    id: "d1-101",
+    source: "ai-generated",
+    domain: "agentic-architecture",
+    scenario: "multi-agent-research",
+    question:
+      "The web search subagent times out while researching a complex topic. You need to design how this failure information flows back to the coordinator agent. Which error propagation approach best enables intelligent recovery?",
+    options: [
+      "Propagate the timeout exception directly to a top-level handler that terminates the entire research workflow.",
+      "Return structured error context to the coordinator including the failure type, the attempted query, any partial results, and potential alternative approaches.",
+      "Implement automatic retry logic with exponential backoff within the subagent, returning a generic 'search unavailable' status only after all retries are exhausted.",
+      "Catch the timeout within the subagent and return an empty result set marked as successful.",
+    ],
+    correctIndex: 1,
+    explanation:
+      "Structured error context (failure type, attempted query, partial results, alternative approaches) gives the coordinator everything it needs to make an intelligent recovery decision, such as retrying with a modified query or proceeding with what was gathered. Terminating the workflow throws away unrelated successful work, blind retries followed by a generic status strip out useful context, and masking the timeout as a successful empty result hides quality issues from the coordinator.",
+  },
+  {
+    id: "d1-102",
+    source: "ai-generated",
+    domain: "agentic-architecture",
+    scenario: "customer-support",
+    question:
+      "You're implementing the agentic loop for your support agent. After each API call to Claude, you need to determine whether to continue the loop (execute the requested tools and call Claude again) or stop (present the final response to the customer). What determines this decision?",
+    options: [
+      "Check whether the response includes any assistant text content; if Claude generated explanatory text, the loop should end.",
+      "Parse Claude's response text for phrases like 'I've completed' or 'Is there anything else?'; these natural language signals indicate the task is finished.",
+      "Set a maximum iteration count (e.g., 10 calls) and stop when reached, regardless of whether Claude indicates more work is needed.",
+      "Check the stop_reason field in Claude's response; continue when it equals 'tool_use' and stop when it equals 'end_turn'.",
+    ],
+    correctIndex: 3,
+    explanation:
+      "The stop_reason field is Claude's explicit, structured signal for loop control: 'tool_use' means Claude wants a tool executed and the results returned, while 'end_turn' means the response is complete and the loop should terminate. Checking for assistant text, parsing natural language cues, or capping iterations are anti-patterns: they either miss continuation, drop legitimate work, or end the loop prematurely.",
+  },
+  {
+    id: "d1-103",
+    source: "ai-generated",
+    domain: "agentic-architecture",
+    scenario: "customer-support",
+    question:
+      "Production logs show that for simple requests like 'refund order #1234', your agent succeeds in 3-4 tool calls with 91% resolution rate. However, for complex requests like 'I've been charged twice, my discount didn't apply, and I want to cancel', the agent averages 12+ tool calls with only 54% resolution, often investigating concerns sequentially and gathering redundant customer data for each one. What's the most effective change to improve complex request handling?",
+    options: [
+      "Decompose the request into distinct concerns, then investigate each in parallel using shared customer context before synthesizing a resolution.",
+      "Reduce the number of available tools by consolidating get_customer, lookup_order, and billing-related lookups into a single investigate_issue tool.",
+      "Add explicit verification gates between steps requiring the agent to checkpoint after resolving each concern before moving to the next.",
+      "Add few-shot examples demonstrating ideal tool call sequences for various multi-part billing scenarios to your system prompt.",
+    ],
+    correctIndex: 0,
+    explanation:
+      "Decomposing the request into distinct concerns and investigating them in parallel with shared customer context addresses both root causes: redundant data fetching disappears once context is reused across concerns, and total tool calls drop because the investigations run concurrently before a unified synthesis. Consolidating tools hides distinct backend behaviors, checkpoint gates add latency without removing redundancy, and few-shot examples don't restructure how investigations are ordered.",
+  },
+  {
+    id: "d1-104",
+    source: "ai-generated",
+    domain: "agentic-architecture",
+    scenario: "customer-support",
+    question:
+      "After calling get_customer and lookup_order, the agent has retrieved all available system data but faces uncertainty. Which situation represents the most appropriate trigger for calling escalate_to_human?",
+    options: [
+      "The customer claims they never received their order, but tracking shows it was delivered and signed for at their address three days ago. The agent should escalate because presenting contradictory evidence might damage the customer relationship.",
+      "The customer's message mentions both a billing question and a product return. The agent should escalate so a human can coordinate handling both issues in a single interaction.",
+      "The customer requests a price match against a competitor. Your policies allow adjustments for price drops on your own site within 14 days but are silent on competitor pricing. The agent should escalate for policy interpretation.",
+      "The customer wants to cancel an order that shipped yesterday, with delivery scheduled for tomorrow. The agent should escalate because the customer might change their mind once they receive the package.",
+    ],
+    correctIndex: 2,
+    explanation:
+      "A genuine policy gap (own-site price drops are covered, competitor matching is silent) is exactly the kind of judgment call the agent cannot make on its own without fabricating policy, so it must escalate for human interpretation. Communicating contradictory delivery evidence is uncomfortable but not a policy gap, multi-part requests are handled by decomposing concerns rather than escalating, and speculating about whether a customer will change their mind isn't a basis for escalation.",
+  },
+  {
+    id: "d1-105",
+    source: "ai-generated",
+    domain: "agentic-architecture",
+    scenario: "customer-support",
+    question:
+      "Production metrics show that when your agent resolves complex cases involving billing disputes or multi-order returns, customer satisfaction scores are 15% lower than for simple cases, even when the resolution is technically correct. Root cause analysis reveals the agent provides accurate resolutions but inconsistently explains the reasoning: sometimes omitting relevant policy details, other times missing timeline information or next steps. The specific context gaps vary by case. You want to improve resolution quality without adding human review overhead. Which approach is most effective?",
+    options: [
+      "Add a self-critique step where the agent evaluates its draft response for completeness, ensuring it addresses the customer's concern, includes relevant context, and anticipates follow-up questions.",
+      "Implement few-shot examples in the system prompt showing complete resolution explanations for five common complex case types, demonstrating how to include policy context, timelines, and next steps.",
+      "Increase the model tier from Haiku to Sonnet for complex cases, routing based on detected case complexity.",
+      "Add a confirmation step where the agent asks 'Does this fully address your concern?' before closing, letting customers request additional information if needed.",
+    ],
+    correctIndex: 0,
+    explanation:
+      "A self-critique step (the evaluator-optimizer pattern) addresses the root cause directly: the agent evaluates its own draft against specific criteria (policy context, timelines, next steps) before sending it. That catches case-specific gaps that vary across scenarios without adding human review. Few-shot examples help only for the patterns shown, raising the model tier doesn't structurally address explanation completeness, and shifting verification to the customer pushes effort onto them.",
+  },
+  {
+    id: "d1-106",
+    source: "ai-generated",
+    domain: "agentic-architecture",
+    scenario: "customer-support",
+    question:
+      "Your get_customer tool returns all matches when searching by name. Claude currently picks the customer with the most recent order when multiple results are returned, but production data shows this causes 15% of multi-match cases to proceed with the wrong customer account. How should you address this?",
+    options: [
+      "Instruct Claude to ask for an additional identifier (email, phone, or order number) when get_customer returns multiple matches, before taking any customer-specific action.",
+      "Add few-shot examples showing Claude how to use conversational context (products mentioned, dates referenced) to infer the correct customer without requiring clarification.",
+      "Implement a confidence scoring system that proceeds automatically above 85% confidence and prompts for clarification below that threshold.",
+      "Modify get_customer to return only the single most likely match based on a ranking algorithm, simplifying Claude's decision by eliminating ambiguous results.",
+    ],
+    correctIndex: 0,
+    explanation:
+      "Asking the customer for an additional identifier (email, phone, or order number) is the most reliable way to resolve multi-match ambiguity because the user has definitive knowledge of their own identity. One extra conversational turn is a small cost to eliminate the 15% error rate. Inferring from context is fragile, automated confidence thresholds still proceed on the wrong account when they fire above the cutoff, and ranking down to a single result hides ambiguity Claude needs to see in order to handle it correctly.",
+  },
+  {
+    id: "d1-107",
+    source: "ai-generated",
+    domain: "agentic-architecture",
+    scenario: "customer-support",
+    question:
+      "Production metrics show your agent averages 4+ API round-trips per resolution. Analysis reveals Claude frequently requests get_customer and lookup_order in separate sequential turns even when both are needed upfront. What's the most effective way to reduce round-trips?",
+    options: [
+      "Prompt Claude to batch tool requests per turn, and return all tool results together before the next API call.",
+      "Increase max_tokens to give Claude more space to plan ahead and naturally batch its tool requests.",
+      "Create composite tools like get_customer_with_orders that bundle common lookup combinations into single calls.",
+      "Implement speculative execution that automatically calls likely-needed tools alongside any requested tool, returning all results regardless of what was requested.",
+    ],
+    correctIndex: 0,
+    explanation:
+      "Prompting Claude to batch related tool requests in a single turn, and returning all results together before the next API call, leverages Claude's native ability to request multiple tools simultaneously. This is the smallest architectural change that directly addresses the sequential calling pattern. Raising max_tokens doesn't change call structure, composite tools add maintenance for every new combination, and speculative execution wastes calls when the guess is wrong.",
+  },
+  {
+    id: "d1-108",
+    source: "ai-generated",
+    domain: "agentic-architecture",
+    scenario: "customer-support",
+    question:
+      "Your agent handles single-concern requests with 94% accuracy (e.g., 'I need a refund for order #1234'). However, when customers include multiple concerns in one message (e.g., 'I need a refund for order #1234 and also want to update my shipping address for order #5678'), tool selection accuracy drops to 58%. The agent typically addresses only one concern or mixes up parameters between requests. What's the most effective approach to improve reliability for multi-concern requests?",
+    options: [
+      "Consolidate related tools into fewer, more general-purpose tools.",
+      "Add few-shot examples to your prompt demonstrating the correct reasoning and tool sequence for multi-concern requests.",
+      "Implement response validation that detects incomplete responses and automatically re-prompts the agent to address any missed concerns.",
+      "Implement a preprocessing layer that uses a separate model call to decompose multi-concern messages into individual requests, process each independently, then combine the results.",
+    ],
+    correctIndex: 1,
+    explanation:
+      "The agent already handles individual concerns well at 94% accuracy, so it just needs pattern guidance for multi-concern messages. Few-shot examples showing correct reasoning and tool sequencing for these requests is a low-cost, high-leverage fix that directly addresses the failure to decompose and route parameters correctly. Consolidating tools sacrifices clarity, post-hoc validation patches the symptom turn by turn, and a separate preprocessing model adds latency and a new failure surface.",
+  },
+  {
+    id: "d1-109",
+    source: "ai-generated",
+    domain: "agentic-architecture",
+    scenario: "customer-support",
+    question:
+      "Your agent achieves 55% first-contact resolution, well below the 80% target. Logs show it escalates straightforward cases (standard damage replacements with photo evidence) while attempting to autonomously handle complex situations requiring policy exceptions. What's the most effective way to improve escalation calibration?",
+    options: [
+      "Add explicit escalation criteria to your system prompt with few-shot examples demonstrating when to escalate versus resolve autonomously.",
+      "Have the agent self-report a confidence score (1-10) before each response and automatically route requests to humans when confidence falls below a threshold.",
+      "Deploy a separate classifier model trained on historical tickets to predict which requests need escalation before the main agent begins processing.",
+      "Implement sentiment analysis to detect customer frustration levels and automatically escalate when negative sentiment exceeds a threshold.",
+    ],
+    correctIndex: 0,
+    explanation:
+      "Explicit escalation criteria backed by few-shot examples directly address the root cause: unclear decision boundaries between straightforward and complex cases. This is the most proportionate first intervention, teaching the agent precisely when to escalate vs. resolve autonomously without new infrastructure. Self-reported confidence is poorly calibrated, a separate classifier model adds complexity and a new failure surface, and sentiment-based escalation reacts to tone rather than to whether the case actually requires human judgment.",
+  },
+  {
+    id: "d1-110",
+    source: "ai-generated",
+    domain: "agentic-architecture",
+    scenario: "ci-cd",
+    question:
+      "Your team uses Claude Code to generate code suggestions, but you notice a pattern: subtle issues (performance optimizations that break edge cases, cleanups that change behavior unexpectedly) only surface when a different team member reviews the PR. Claude's reasoning during generation shows it considered these cases but concluded its approach was correct. Which approach directly addresses the root cause of this self-review limitation?",
+    options: [
+      "Include comprehensive test files and documentation in the prompt context so Claude better understands expected behavior during generation.",
+      "Enable extended thinking mode for the generation pass, allowing more thorough deliberation before producing suggestions.",
+      "Have a second, independent Claude Code instance review the changes without seeing the generator's reasoning.",
+      "Add explicit self-review instructions to the generation prompt, asking Claude to critique its own suggestions before finalizing output.",
+    ],
+    correctIndex: 2,
+    explanation:
+      "A second, independent Claude Code instance reviewing the changes without seeing the generator's reasoning eliminates the confirmation bias that lets the original instance rationalize away the issues it already considered. This fresh-perspective pass mirrors the value of human peer review. More context or extended thinking can help generation quality but don't break the bias loop, and self-critique inside the same session inherits the same prior reasoning.",
+  },
 
   // ---- Domain 2: Tool Design & MCP (MCP intro + advanced) ----
   {
@@ -3266,6 +3674,108 @@ export const questions: Question[] = [
     correctIndex: 1,
     explanation:
       "Resources are fetched via ReadResourceRequest with a URI; for templated resources the Python SDK parses URI parameters and passes them as keyword arguments (doc_id) to the resource function. Resources are not tools, so CallToolRequest and tool-input framing are wrong, and clients do not bulk-download then filter.",
+  },
+  {
+    id: "d2-091",
+    source: "ai-generated",
+    domain: "tool-design-mcp",
+    scenario: "customer-support",
+    question:
+      "Production logs show the agent frequently calls get_customer when users ask about orders (e.g., 'check my order #12345'), instead of calling lookup_order. Both tools have minimal descriptions ('Retrieves customer information' / 'Retrieves order details') and accept similar identifier formats. What's the most effective first step to improve tool selection reliability?",
+    options: [
+      "Add few-shot examples to the system prompt demonstrating correct tool selection patterns, with 5-8 examples showing order-related queries routing to lookup_order.",
+      "Expand each tool's description to include input formats it handles, example queries, edge cases, and boundaries explaining when to use it versus similar tools.",
+      "Consolidate both tools into a single lookup_entity tool that accepts any identifier and internally determines which backend to query.",
+      "Implement a routing layer that parses user input before each turn and pre-selects the appropriate tool based on detected keywords and identifier patterns.",
+    ],
+    correctIndex: 1,
+    explanation:
+      "Expanding tool descriptions to include input formats, example queries, edge cases, and boundaries directly addresses the root cause: minimal descriptions leave the LLM unable to distinguish between similar tools. This is a low-effort, high-leverage first step because tool descriptions are the primary mechanism the model uses for selection. Few-shot examples help but treat the symptom, consolidating tools loses behavioral clarity, and a pre-routing layer adds brittle keyword logic outside the model.",
+  },
+  {
+    id: "d2-092",
+    source: "ai-generated",
+    domain: "tool-design-mcp",
+    scenario: "customer-support",
+    question:
+      "Production logs reveal that the agent misinterprets data from your MCP tools: Unix timestamps from get_customer, ISO 8601 dates from lookup_order, and numeric status codes (1=pending, 2=shipped). Some tools are third-party MCP servers you cannot modify. What's the most maintainable approach to normalize data formats?",
+    options: [
+      "Create a normalize_data tool that the agent calls after each data retrieval to transform values.",
+      "Use a PostToolUse hook to intercept tool results and apply formatting transformations before agent processing.",
+      "Add detailed format documentation to your system prompt explaining each tool's data conventions.",
+      "Modify tools you control to return human-readable formats; create wrapper tools for third-party tools.",
+    ],
+    correctIndex: 1,
+    explanation:
+      "A PostToolUse hook provides a centralized, deterministic point to intercept and normalize every tool result, including those from third-party MCP servers you can't modify, before the agent sees them. Transformations happen uniformly in code rather than depending on the model to call a normalizer, parse prose format docs, or use the right wrapper. That makes it the most maintainable approach as new tools are added.",
+  },
+  {
+    id: "d2-093",
+    source: "ai-generated",
+    domain: "tool-design-mcp",
+    scenario: "customer-support",
+    question:
+      "Production logs show the agent sometimes selects get_customer when lookup_order would be more appropriate, particularly for ambiguous requests like 'I need help with my recent purchase.' You decide to add few-shot examples to your system prompt to improve tool selection. Which approach will most effectively address this issue?",
+    options: [
+      "Add examples grouped by tool: all get_customer scenarios together, then all lookup_order scenarios.",
+      "Add explicit 'use when' and 'do not use when' guidelines in each tool's description covering the ambiguous cases.",
+      "Add 10-15 examples of clear, unambiguous requests that demonstrate correct tool selection for each tool's typical use cases.",
+      "Add 4-6 examples targeting ambiguous scenarios, each showing reasoning for why one tool was chosen over plausible alternatives.",
+    ],
+    correctIndex: 3,
+    explanation:
+      "Targeting few-shot examples at the specific ambiguous scenarios where errors occur, and showing explicit reasoning about why one tool was chosen over another, teaches the model the comparative decision-making it needs for edge cases. Worked examples with reasoning beat declarative rules for nuanced tool selection. Grouping examples by tool removes the comparative signal, in-description guidelines help but lack the demonstration, and many examples on already-clear cases don't address the ambiguous ones.",
+  },
+  {
+    id: "d2-094",
+    source: "ai-generated",
+    domain: "tool-design-mcp",
+    scenario: "customer-support",
+    question:
+      "Production data shows that in 12% of cases, your agent skips get_customer entirely and calls lookup_order using only the customer's stated name, occasionally leading to misidentified accounts and incorrect refunds. What change would most effectively address this reliability issue?",
+    options: [
+      "Enhance the system prompt to state that customer verification via get_customer is mandatory before any order operations.",
+      "Implement a routing classifier that analyzes each request and enables only the subset of tools appropriate for that request type.",
+      "Add few-shot examples showing the agent always calling get_customer first, even when customers volunteer order details.",
+      "Add a programmatic prerequisite that blocks lookup_order and process_refund calls until get_customer has returned a verified customer ID.",
+    ],
+    correctIndex: 3,
+    explanation:
+      "A programmatic prerequisite that blocks lookup_order and process_refund until get_customer has returned a verified customer ID provides a deterministic guarantee that the verification step is followed, regardless of model behavior. Prompt instructions and few-shot examples are suggestions the agent can drift from in 12% of cases, and a routing classifier doesn't enforce an ordered sequence of tool calls inside a session.",
+  },
+  {
+    id: "d2-095",
+    source: "ai-generated",
+    domain: "tool-design-mcp",
+    scenario: "customer-support",
+    question:
+      "In testing, you notice the agent frequently calls get_customer when users ask about order status, even though lookup_order would be more appropriate. What should you examine first to address this issue?",
+    options: [
+      "Reduce the number of tools available to the agent to simplify selection.",
+      "Implement a pre-processing classifier that detects order queries and routes directly to lookup_order.",
+      "Add few-shot examples covering every possible order-related query pattern to the system prompt.",
+      "Review tool descriptions to ensure they clearly distinguish each tool's purpose.",
+    ],
+    correctIndex: 3,
+    explanation:
+      "Tool descriptions are the primary input the model uses to decide which tool to call, so when an agent consistently selects the wrong one, the first diagnostic step is to check whether the descriptions clearly distinguish each tool's purpose and when each should be used. Reducing tools may remove necessary capability, a pre-routing classifier sits outside the model and is brittle, and exhaustive few-shot coverage is a costly fix for what is usually a description problem.",
+  },
+  {
+    id: "d2-096",
+    source: "ai-generated",
+    domain: "tool-design-mcp",
+    scenario: "customer-support",
+    question:
+      "Production logs reveal a consistent pattern: when customers include 'account' in messages (e.g., 'I want to check my account for the order I placed yesterday'), the agent calls get_customer first 78% of the time. When customers phrase similar requests without 'account' (e.g., 'I want to check on the order I placed yesterday'), it calls lookup_order first 93% of the time. The tool descriptions are well-written and unambiguous. What is the most likely root cause of this discrepancy?",
+    options: [
+      "The system prompt contains keyword-sensitive instructions that steer behavior based on terms like 'account,' creating unintended tool selection patterns.",
+      "The model's base training creates associations between 'account' terminology and customer-related operations that override the tool descriptions.",
+      "The model requires more training data on multi-concept messages and should be fine-tuned on examples that include both account and order language.",
+      "The tool descriptions need additional negative examples specifying when NOT to use each tool to prevent this keyword-triggered confusion.",
+    ],
+    correctIndex: 0,
+    explanation:
+      "The systematic keyword-triggered pattern (78% vs 93%) points to explicit routing logic in the system prompt that reacts to the word 'account' and steers the agent toward customer-related tools. Because the tool descriptions are stated to be well-written and unambiguous, the discrepancy is upstream prompt-level steering rather than a description problem, a base-training artifact (which would be less keyword-sharp), or a need for fine-tuning.",
   },
 
   // ---- Domain 3: Claude Code Config (skills + hooks courses) ----
@@ -3575,6 +4085,448 @@ export const questions: Question[] = [
     explanation:
       "Running /effort sets the session's reasoning level (low is faster and cheaper, max reasons longest). The ultrathink keyword in a prompt signals extra thinking for that single turn without changing the session's effort level.",
   },
+  {
+    id: "d3-060",
+    source: "ai-generated",
+    domain: "claude-code-config",
+    scenario: "code-generation",
+    question:
+      "Your team has created a /migration skill that generates database migration files. The skill accepts a migration name via $ARGUMENTS. In production, you're seeing three issues: (1) developers often invoke the skill without arguments, resulting in poorly-named files, (2) the skill sometimes incorporates database schema details from unrelated earlier conversations, and (3) a developer accidentally triggered destructive test cleanup when the skill had broad tool access. Which configuration approach addresses all three issues?",
+    options: [
+      "Split into separate /migration-create and /migration-apply skills, add instructions in each SKILL.md to request a migration name if not provided, and use different allowed-tools scopes for each skill.",
+      "Add argument-hint frontmatter to prompt for required parameters, use context: fork to isolate execution, and restrict allowed-tools to file write operations.",
+      "Use positional parameters $1 and $2 instead of $ARGUMENTS to enforce specific inputs, include explicit schema file references via @ syntax to control context, and add description frontmatter warning about destructive operations.",
+      "Include validation instructions in the skill's SKILL.md that direct Claude to verify $ARGUMENTS contains a valid name, add prompts to ignore prior conversation context, and list forbidden operations Claude should avoid.",
+    ],
+    correctIndex: 1,
+    explanation:
+      "Three distinct skill configuration features each address one issue: argument-hint frontmatter shows expected parameters during autocomplete (addressing missing arguments), context: fork isolates execution in a subagent context separate from conversation history (preventing context bleeding from earlier conversations), and allowed-tools restricts tool access to only file write operations (preventing destructive actions). Splitting into separate skills doesn't inherently solve context isolation since both would still share conversation history, and SKILL.md instructions are less reliable than frontmatter for enforcing argument requirements.",
+  },
+  {
+    id: "d3-061",
+    source: "ai-generated",
+    domain: "claude-code-config",
+    scenario: "code-generation",
+    question:
+      "You need to add Slack as a new notification channel. The existing codebase has clear, consistent patterns for email, SMS, and push channels. However, the Slack API offers fundamentally different integration approaches: incoming webhooks (simple, one-way only), bot tokens (enables delivery confirmation and programmatic control), or Slack Apps (bidirectional events, requires workspace approval). Your ticket says 'add Slack support' without specifying which integration method or whether advanced features like delivery tracking will be needed. How should you approach this task?",
+    options: [
+      "Enter plan mode to explore the integration options and their architectural implications, then present a recommendation before implementing.",
+      "Start direct execution to scaffold the Slack channel class following existing patterns, deferring the integration method decision until later.",
+      "Start direct execution using the bot token approach to enable delivery confirmation capabilities.",
+      "Start direct execution using incoming webhooks to match the existing one-way notification pattern.",
+    ],
+    correctIndex: 0,
+    explanation:
+      "The Slack integration involves multiple valid approaches with significantly different architectural implications, and the requirements are ambiguous. Using plan mode to explore trade-offs between webhooks, bot tokens, and Slack Apps allows for an informed recommendation and team alignment before committing to an implementation path. Direct execution risks scaffolding the wrong abstraction or quietly choosing a method that blocks future features like delivery tracking.",
+  },
+  {
+    id: "d3-062",
+    source: "ai-generated",
+    domain: "claude-code-config",
+    scenario: "code-generation",
+    question:
+      "You've been assigned to restructure the team's monolithic application into microservices. This will involve changes across dozens of files and requires decisions about service boundaries and module dependencies. Which approach should you take?",
+    options: [
+      "Start with direct execution and make changes incrementally, letting the implementation reveal the natural service boundaries.",
+      "Use direct execution with comprehensive upfront instructions detailing exactly how each service should be structured.",
+      "Enter plan mode to explore the codebase, understand dependencies, and design an implementation approach before making changes.",
+      "Begin in direct execution mode and only switch to plan mode if you encounter unexpected complexity during implementation.",
+    ],
+    correctIndex: 2,
+    explanation:
+      "Plan mode is the right strategy for a complex architectural restructuring like breaking apart a monolith. It allows safe exploration of the codebase, understanding of dependencies, and informed decisions about service boundaries before committing to potentially costly changes across dozens of files. Direct execution risks locking in poor boundaries discovered too late, and switching modes reactively wastes work already done.",
+  },
+  {
+    id: "d3-063",
+    source: "ai-generated",
+    domain: "claude-code-config",
+    scenario: "code-generation",
+    question:
+      "You're creating a custom /explore-alternatives skill that your team uses to brainstorm and evaluate different implementation approaches before committing to one. However, developers report that after running this skill, Claude's subsequent responses are influenced by the exploration discussion, sometimes referencing abandoned approaches or maintaining exploratory context that confuses actual implementation work. What's the most effective way to configure this skill?",
+    options: [
+      "Add context: fork to the skill's frontmatter.",
+      "Create the skill in ~/.claude/skills/ instead of .claude/skills/.",
+      "Split the skill into two separate skills, /explore-start and /explore-end, to demarcate when exploration context should be discarded.",
+      "Use the ! prefix in the skill to execute the exploration logic as a bash subprocess.",
+    ],
+    correctIndex: 0,
+    explanation:
+      "The context: fork frontmatter option runs the skill in an isolated sub-agent context, so the exploration discussion does not pollute the main conversation history. This prevents abandoned approaches and exploratory context from influencing subsequent implementation work. Skill location (user vs. project) does not affect context isolation, splitting into two skills still shares conversation history, and the ! prefix only runs shell commands.",
+  },
+  {
+    id: "d3-064",
+    source: "ai-generated",
+    domain: "claude-code-config",
+    scenario: "code-generation",
+    question:
+      "Your team has been using Claude Code for several months. Recently, three developers report that Claude correctly follows your 'always include comprehensive error handling' guideline, but a fourth developer who just joined reports Claude isn't following this guideline. All four developers are working in the same repository and have the latest code pulled. What's the most likely cause and appropriate fix?",
+    options: [
+      "The guideline exists in the original developers' ~/.claude/CLAUDE.md files (user-level) instead of the project's .claude/CLAUDE.md. Move the instruction to the project-level file so all team members receive it.",
+      "Claude Code builds per-user preference models over time through repeated interactions. The new developer needs to repeatedly specify the error handling requirement until Claude learns their preferences.",
+      "The new developer's ~/.claude/CLAUDE.md contains conflicting instructions that override the project settings. Have them remove the conflicting section from their user-level configuration.",
+      "Claude Code caches CLAUDE.md contents after first read. The original developers have cached versions while the new developer loaded after the file was modified. Have all developers clear their Claude Code cache.",
+    ],
+    correctIndex: 0,
+    explanation:
+      "If the guideline was added to each original developer's user-level ~/.claude/CLAUDE.md rather than the project's .claude/CLAUDE.md, new team members would not inherit it when joining. Moving the instruction to the project-level file (committed to the repo) ensures every current and future contributor receives it automatically. Claude Code does not build per-user preference models, conflicts in a brand-new developer's user file are unlikely, and CLAUDE.md is read fresh per session rather than cached across sessions.",
+  },
+  {
+    id: "d3-065",
+    source: "ai-generated",
+    domain: "claude-code-config",
+    scenario: "code-generation",
+    question:
+      "Your team created an /analyze-codebase skill that performs comprehensive code analysis: dependency scanning, test coverage calculation, and code quality metrics. After running this command, team members report that Claude becomes less responsive in the session and loses track of their original task. What's the most effective way to address this while preserving full analysis capability?",
+    options: [
+      "Add context: fork to the skill's frontmatter to run the analysis in an isolated sub-agent context.",
+      "Add instructions to the skill to compress all outputs into a brief summary before displaying.",
+      "Add model: haiku to the frontmatter to use a faster, more efficient model for the analysis.",
+      "Split the skill into three smaller skills that each generate less output.",
+    ],
+    correctIndex: 0,
+    explanation:
+      "Using context: fork in the skill's frontmatter runs the analysis in an isolated sub-agent context, which prevents the verbose output from polluting the main conversation's context window and causing Claude to lose track of the original task. This preserves full analysis capability while keeping the main session responsive. Compressing output, swapping models, or splitting skills still leaves the analysis output in the main conversation.",
+  },
+  {
+    id: "d3-066",
+    source: "ai-generated",
+    domain: "claude-code-config",
+    scenario: "code-generation",
+    question:
+      "You've created a /commit skill in .claude/skills/commit/SKILL.md that your team uses. One developer wants to customize it for their personal workflow (different commit message format, additional checks) without affecting teammates. What should you recommend?",
+    options: [
+      "Create a personal version in ~/.claude/skills/ with a different name like /my-commit.",
+      "Create a personal version at ~/.claude/skills/commit/SKILL.md with the same name.",
+      "Set override: true in the personal skill's frontmatter to take precedence over the project version.",
+      "Add username-based conditional logic to the project skill's frontmatter.",
+    ],
+    correctIndex: 0,
+    explanation:
+      "Project skills in .claude/skills/ take precedence over personal skills in ~/.claude/skills/ when they share the same name, so a personal /commit would be shadowed by the project version and never invoked. The developer must use a distinct name (such as /my-commit) in their personal skills directory to keep their custom version accessible alongside the team's project skill. There is no override flag, and username-based logic isn't a supported frontmatter feature.",
+  },
+  {
+    id: "d3-067",
+    source: "ai-generated",
+    domain: "claude-code-config",
+    scenario: "code-generation",
+    question:
+      "Your codebase has distinct areas with different coding conventions: React components use functional style with hooks, API handlers use async/await with specific error handling, and database models follow a repository pattern. Test files are spread throughout the codebase alongside the code they test (e.g., Button.test.tsx next to Button.tsx), and you want all tests to follow the same conventions regardless of location. What's the most maintainable way to ensure Claude automatically applies the correct conventions when generating code?",
+    options: [
+      "Create skills in .claude/skills/ for each code type that include the relevant conventions in their SKILL.md files.",
+      "Create rule files in .claude/rules/ with YAML frontmatter specifying glob patterns to conditionally apply conventions based on file paths.",
+      "Consolidate all conventions in the root CLAUDE.md file under headers for each area, relying on Claude to infer which section applies.",
+      "Place a separate CLAUDE.md file in each subdirectory containing that area's specific conventions.",
+    ],
+    correctIndex: 1,
+    explanation:
+      "Rule files in .claude/rules/ with YAML frontmatter and glob patterns (e.g., **/*.test.tsx, src/api/**/*.ts) automatically and deterministically apply conventions based on file paths, regardless of where those files live in the directory tree. This is the most maintainable approach for cross-cutting concerns like test files spread throughout the codebase, since it avoids duplication and doesn't rely on Claude inferring the right section. Skills require manual invocation, monolithic CLAUDE.md depends on inference, and subdirectory CLAUDE.md files don't cleanly handle co-located test files.",
+  },
+  {
+    id: "d3-068",
+    source: "ai-generated",
+    domain: "claude-code-config",
+    scenario: "code-generation",
+    question:
+      "Your team's CLAUDE.md file has grown to over 500 lines, mixing TypeScript conventions, testing guidelines, API patterns, and deployment procedures. Developers find it difficult to locate and update relevant sections. What approach does Claude Code support for organizing project-level instructions into focused, topic-specific modules?",
+    options: [
+      "Define a .claude/config.yaml file that maps file patterns to specific sections within CLAUDE.md.",
+      "Split instructions into README.md files in relevant subdirectories, which Claude automatically loads as instructions.",
+      "Create separate markdown files in .claude/rules/, each covering one topic (e.g., testing.md, api-conventions.md).",
+      "Create multiple files named CLAUDE.md at different levels of the directory tree, each one overriding the parent's instructions.",
+    ],
+    correctIndex: 2,
+    explanation:
+      "Claude Code supports a .claude/rules/ directory where teams can create separate markdown files for topic-specific guidelines (e.g., testing.md, api-conventions.md), letting large instruction sets be organized into focused, maintainable modules. README.md files are not loaded as instructions, there is no config.yaml mapping to CLAUDE.md sections, and nested CLAUDE.md files supplement rather than override parent instructions, scoping by directory rather than by topic.",
+  },
+  {
+    id: "d3-069",
+    source: "ai-generated",
+    domain: "claude-code-config",
+    scenario: "code-generation",
+    question:
+      "Your CLAUDE.md has grown to over 400 lines containing coding standards, testing conventions, a detailed PR review checklist, deployment workflow instructions, and database migration procedures. You want Claude to always follow the coding standards and testing conventions, but only apply PR review, deployment, and migration guidance when you're actually performing those tasks. What's the most effective restructuring approach?",
+    options: [
+      "Split the CLAUDE.md into files in .claude/rules/ with path-specific glob patterns so each rule loads only for matching file types.",
+      "Move all guidance into separate Skills files organized by workflow type, keeping only a brief project description in CLAUDE.md.",
+      "Keep all content in CLAUDE.md but use @import syntax to organize it into separately maintained files by category.",
+      "Keep universal standards in CLAUDE.md and create Skills for task-specific workflows (PR reviews, deployments, migrations) with trigger keywords.",
+    ],
+    correctIndex: 3,
+    explanation:
+      "CLAUDE.md content loads for every conversation, so universal coding standards and testing conventions belong there and are always applied. Skills, by contrast, are invoked on-demand when Claude detects relevant trigger keywords, making them ideal for task-specific workflows like PR reviews, deployments, and migrations. Glob-based rules suit file-type concerns but don't fit workflow-triggered guidance, and pushing everything into skills would lose the always-on coverage of the universal standards.",
+  },
+  {
+    id: "d3-070",
+    source: "ai-generated",
+    domain: "claude-code-config",
+    scenario: "code-generation",
+    question:
+      "Your team wants to add a GitHub MCP server to enable PR lookups and CI status checks through Claude Code. Each of the six developers has their own GitHub personal access token. You want consistent tooling across the team without committing credentials to version control. What's the most effective configuration approach?",
+    options: [
+      "Create an MCP server wrapper that reads tokens from a .env file and proxies requests to the GitHub API, then add this wrapper to your project .mcp.json.",
+      "Have each developer configure the server in user scope with claude mcp add --scope user.",
+      "Add the server to a project-scoped .mcp.json with environment variable expansion (${GITHUB_TOKEN}) for authentication, and document the required environment variable in your project README.",
+      "Configure the server in project scope with a placeholder token value, then instruct developers to override it in their local scope configuration.",
+    ],
+    correctIndex: 2,
+    explanation:
+      "A project-scoped .mcp.json with environment variable expansion (such as ${GITHUB_TOKEN}) is the idiomatic approach: it provides a single, version-controlled source of truth for the team's MCP configuration while letting each developer supply their own credentials through environment variables. Documenting the required variable in the README keeps onboarding simple without committing secrets. A custom wrapper adds maintenance burden, user-scope configuration drifts across machines, and placeholder tokens with manual overrides are error-prone.",
+  },
+  {
+    id: "d3-071",
+    source: "ai-generated",
+    domain: "claude-code-config",
+    scenario: "code-generation",
+    question:
+      "You've asked Claude Code to implement a function that transforms API responses into a normalized internal format. After two iterations, the output structure still doesn't match expectations: some fields are nested differently and timestamps aren't formatted correctly. You've been describing the requirements in prose, but Claude seems to interpret them differently each time. What's the most effective approach for the next iteration?",
+    options: [
+      "Provide 2-3 concrete input-output examples showing the expected transformation for representative API responses.",
+      "Ask Claude to explain its current interpretation of the requirements so you can identify where understanding diverges.",
+      "Write a JSON schema defining the expected output structure and validate Claude's output against it after each iteration.",
+      "Rewrite your requirements with greater technical precision, specifying exact field mappings, nesting rules, and timestamp format strings.",
+    ],
+    correctIndex: 0,
+    explanation:
+      "Concrete input-output examples eliminate the ambiguity inherent in prose descriptions by showing Claude exactly what the expected transformation looks like. This directly addresses the root cause (misinterpretation of prose requirements) by giving unambiguous targets for field nesting and timestamp formatting. A JSON schema validates structure but doesn't teach the mapping logic, asking Claude to explain its interpretation diagnoses but doesn't correct it, and even more precise prose still leaves room for divergent interpretation.",
+  },
+  {
+    id: "d3-072",
+    source: "ai-generated",
+    domain: "claude-code-config",
+    scenario: "code-generation",
+    question:
+      "You're adding error handling wrappers to external API calls across a 120-file codebase. The task has three phases: (1) discovering all API call locations and patterns, (2) designing the error handling approach collaboratively, and (3) implementing wrappers consistently. During Phase 1, Claude generates verbose output listing hundreds of call sites with context. Your context window is filling rapidly before you've finished discovery. What's the most effective approach to complete this while maintaining implementation consistency?",
+    options: [
+      "Use the Explore subagent for Phase 1 to isolate verbose output and return a summary, then continue Phases 2-3 in the main conversation.",
+      "Define your error handling pattern in CLAUDE.md, then process files in batches across multiple sessions, relying on the shared memory file for consistency.",
+      "Switch to headless mode with --continue, passing explicit context summaries between batch invocations to maintain continuity.",
+      "Continue all phases in the main conversation, using /compact periodically to reduce context usage as you progress through the files.",
+    ],
+    correctIndex: 0,
+    explanation:
+      "The Explore subagent runs Phase 1 in an isolated context and returns only a concise summary to the main conversation, preserving the main context window for the collaborative design and consistent implementation phases where retained context is most valuable. Splitting across sessions loses in-context design decisions, headless --continue still discards retained reasoning between invocations, and /compact summarizes lossily and risks dropping the very details needed for consistent implementation.",
+  },
+  {
+    id: "d3-073",
+    source: "ai-generated",
+    domain: "claude-code-config",
+    scenario: "code-generation",
+    question:
+      "You want to create a custom /review slash command that runs your team's standard code review checklist. This command should be available to every developer when they clone or pull the repository. Where should you create this command file?",
+    options: [
+      "In a .claude/config.json file with a commands array.",
+      "In the CLAUDE.md file at the project root.",
+      "In ~/.claude/commands/ in each developer's home directory.",
+      "In the .claude/commands/ directory in the project repository.",
+    ],
+    correctIndex: 3,
+    explanation:
+      "The .claude/commands/ directory in the project repository is the designated location for project-scoped custom slash commands. Files placed there are version-controlled and automatically available to every developer who clones or pulls the repo. Home-directory commands aren't shared, CLAUDE.md is for project instructions rather than command definitions, and there is no commands array in config.json.",
+  },
+  {
+    id: "d3-074",
+    source: "ai-generated",
+    domain: "claude-code-config",
+    scenario: "code-generation",
+    question:
+      "You've found that including 2-3 full exemplar endpoint implementations as context significantly improves consistency when generating new API endpoints. However, this context is only useful for creating new endpoints, not for bug fixes, code reviews, or other API directory work. What's the most efficient configuration approach?",
+    options: [
+      "Add the exemplar endpoint code with pattern documentation to the project CLAUDE.md file so it's automatically available.",
+      "Reference the exemplar endpoints manually in each generation request by copying relevant code into your prompt.",
+      "Configure path-specific rules in .claude/rules/api/ that include the exemplar code and activate when working in the API directory.",
+      "Create a skill that references the exemplar endpoints and includes pattern-following instructions, invoked on-demand via slash command.",
+    ],
+    correctIndex: 3,
+    explanation:
+      "A skill that references the exemplar endpoints with pattern-following instructions is invoked on-demand via a slash command, so the context loads only when generating new endpoints and stays out of unrelated tasks like bug fixes or code reviews. CLAUDE.md would load the exemplars for every conversation, path-based rules in .claude/rules/api/ would activate for all API directory work (including bug fixes), and copying code into each prompt is manual and error-prone.",
+  },
+  {
+    id: "d3-075",
+    source: "ai-generated",
+    domain: "claude-code-config",
+    scenario: "ci-cd",
+    question:
+      "Your CI pipeline includes two Claude-powered code review modes: a pre-merge-commit hook that blocks PR merging until complete, and 'deep analysis' that runs overnight, polls for batch completion, then posts detailed suggestions to the PR. You want to reduce API costs using the Message Batches API, which offers 50% cost savings but requires polling and may take up to 24 hours to complete. Which mode should use batch processing?",
+    options: [
+      "Neither mode.",
+      "Both modes.",
+      "Pre-merge-commit hook only.",
+      "Deep analysis only.",
+    ],
+    correctIndex: 3,
+    explanation:
+      "Deep analysis already runs overnight, tolerates latency, and uses a polling model to check completion before posting results, which matches the Message Batches API's asynchronous, poll-based design and captures the 50% cost savings. The pre-merge-commit hook is on the developer's critical path: a multi-hour wait would block merges, so its latency budget rules out batch processing.",
+  },
+  {
+    id: "d3-076",
+    source: "ai-generated",
+    domain: "claude-code-config",
+    scenario: "ci-cd",
+    question:
+      "Your automated review generates test case suggestions for each PR. When reviewing a PR that adds course completion tracking, Claude suggests 10 test cases but developer feedback indicates 6 duplicate scenarios already covered in the existing test suite. What change would most effectively reduce duplicate suggestions?",
+    options: [
+      "Reduce requested suggestions from 10 to 5, assuming Claude will prioritize the most valuable cases first.",
+      "Add instructions directing Claude to focus exclusively on edge cases and error conditions rather than successful paths.",
+      "Include the existing test file in the context so Claude can identify what scenarios are already covered.",
+      "Implement post-processing that filters suggestions whose descriptions match keywords from existing test names.",
+    ],
+    correctIndex: 2,
+    explanation:
+      "Including the existing test file in the context addresses the root cause of duplication: Claude can only avoid suggesting already-covered scenarios if it knows what tests already exist. Reducing the suggestion count doesn't tell Claude which ones are duplicates, restricting to edge cases narrows scope but still risks repeating ones already covered, and keyword filtering is fragile because semantically identical tests can use very different wording.",
+  },
+  {
+    id: "d3-077",
+    source: "ai-generated",
+    domain: "claude-code-config",
+    scenario: "ci-cd",
+    question:
+      "Your pipeline script runs claude 'Analyze this pull request for security issues' but the job hangs indefinitely. Logs indicate Claude Code is waiting for interactive input. What's the correct approach to run Claude Code in an automated pipeline?",
+    options: [
+      "Set the environment variable CLAUDE_HEADLESS=true before running the command.",
+      "Add the --batch flag: claude --batch 'Analyze this pull request for security issues'.",
+      "Redirect stdin from /dev/null: claude 'Analyze this pull request for security issues' < /dev/null.",
+      "Add the -p flag: claude -p 'Analyze this pull request for security issues'.",
+    ],
+    correctIndex: 3,
+    explanation:
+      "The -p (or --print) flag is the documented way to run Claude Code in non-interactive mode. It processes the given prompt, writes the result to stdout, and exits without waiting for user input, which is exactly what a CI/CD pipeline needs. CLAUDE_HEADLESS and --batch are not real flags, and redirecting stdin doesn't change Claude Code's default interactive REPL behavior.",
+  },
+  {
+    id: "d3-078",
+    source: "ai-generated",
+    domain: "claude-code-config",
+    scenario: "ci-cd",
+    question:
+      "Your CI pipeline runs the Claude Code CLI (with --print mode) using CLAUDE.md to provide project context for code reviews, and developers generally find the reviews insightful. However, they report that integrating findings into your workflow is difficult: Claude produces narrative paragraphs that must be manually copied into PR comments. Your team wants to automatically post each finding as a separate inline PR comment at the relevant code location, which requires structured data with file path, line number, severity, and suggested fix. What's the most effective approach?",
+    options: [
+      "Keep the narrative review format but add a summarization step that uses Claude to generate a structured JSON summary of the findings.",
+      "Add a 'Review Output Format' section to CLAUDE.md with examples showing structured findings, so Claude learns the expected format from project context.",
+      "Use CLI flags --output-format json and --json-schema to enforce structured findings, then parse output to post inline comments via the GitHub API.",
+      "Include explicit formatting instructions in your review prompt requiring each finding to follow a parseable template like [FILE:path] [LINE:n] [SEVERITY:level] ....",
+    ],
+    correctIndex: 2,
+    explanation:
+      "Using --output-format json with --json-schema enforces structured output at the CLI level, guaranteeing well-formed JSON with the required fields (file path, line number, severity, suggested fix) that can be reliably parsed and posted as inline PR comments via the GitHub API. This leverages native CLI capabilities designed for structured-output enforcement. A second summarization pass adds cost and another point of drift, prose templates and CLAUDE.md guidance still depend on the model's compliance and remain harder to parse robustly.",
+  },
+  {
+    id: "d3-079",
+    source: "ai-generated",
+    domain: "claude-code-config",
+    scenario: "ci-cd",
+    question:
+      "Analysis of your automated code review shows significant variation in false positive rates across finding categories. Security and correctness findings have an 8% false positive rate, performance findings have 18%, style and naming findings have 52%, and documentation findings have 48%. Developer surveys indicate growing distrust: many have started dismissing findings without review because 'half are wrong.' The high false positive categories are undermining confidence in the accurate categories. What approach best restores developer trust while improving the system?",
+    options: [
+      "Keep all categories enabled while adding few-shot examples to improve each category's accuracy over the coming weeks.",
+      "Temporarily disable high false positive categories (style, naming, documentation) and run only high-precision categories while improving prompts.",
+      "Keep all categories but display a confidence score with each finding, letting developers decide which to investigate.",
+      "Apply a uniform strictness reduction across all categories to bring the overall false positive rate to an acceptable level.",
+    ],
+    correctIndex: 1,
+    explanation:
+      "Temporarily disabling the high false positive categories (style, naming, documentation) immediately stops trust erosion by removing the noise that drives developers to dismiss findings wholesale, while preserving the value of the high-precision categories like security and correctness. That buys time to improve prompts for the noisy categories before re-enabling them. Keeping everything on (with examples, confidence scores, or a uniform strictness cut) leaves the noise visible, and lowering strictness everywhere weakens the categories that were already accurate.",
+  },
+  {
+    id: "d3-080",
+    source: "ai-generated",
+    domain: "claude-code-config",
+    scenario: "ci-cd",
+    question:
+      "The code review component works iteratively: Claude analyzes a changed file, then may request related files (imports, base classes, tests) via tool calling to understand context before providing final feedback. Your application defines a tool that lets Claude request file contents; Claude invokes this tool, receives results, and continues its analysis. You're evaluating batch processing to reduce API costs. What is the primary technical constraint when considering batch processing for this workflow?",
+    options: [
+      "Batch processing lacks request correlation identifiers for matching outputs to input requests.",
+      "The batch API doesn't support tool definitions in request parameters.",
+      "Batch processing latency of up to 24 hours is too slow for pull request feedback, though the workflow could otherwise function.",
+      "The asynchronous model prevents executing tools mid-request and returning results for Claude to continue analysis.",
+    ],
+    correctIndex: 3,
+    explanation:
+      "The batch API's asynchronous, fire-and-forget model has no mechanism to intercept a tool call mid-request, execute the tool, and feed results back so Claude can continue. That fundamentally breaks iterative tool-calling workflows that need multiple rounds of invocation and response inside a single logical interaction. Batches support request IDs and tool definitions, and even if latency were acceptable, the missing mid-request tool execution still blocks this workflow.",
+  },
+  {
+    id: "d3-081",
+    source: "ai-generated",
+    domain: "claude-code-config",
+    scenario: "ci-cd",
+    question:
+      "A pull request modifies 14 files across the stock tracking module. Your single-pass review analyzing all files together produces inconsistent results: detailed feedback for some files but superficial comments for others, obvious bugs missed, and contradictory feedback (flagging a pattern as problematic in one file while approving identical code elsewhere in the same PR). How should you restructure the review?",
+    options: [
+      "Split into focused passes: analyze each file individually for local issues, then run a separate integration-focused pass examining cross-file data flow.",
+      "Switch to a higher-tier model with a larger context window to give all 14 files adequate attention in one pass.",
+      "Require developers to split large PRs into smaller submissions of 3-4 files before the automated review runs.",
+      "Run three independent review passes on the full PR and only flag issues that appear in at least two of the three runs.",
+    ],
+    correctIndex: 0,
+    explanation:
+      "Per-file passes address the root cause of attention dilution by giving each file consistent depth and reliable local-issue coverage, while a separate integration-focused pass handles cross-file concerns like data flow. Together they cover both dimensions of review quality. A bigger model still spreads attention across 14 files in one go, forcing developers to split PRs offloads the problem, and majority voting across three full-PR runs is expensive and doesn't fix the underlying attention issue.",
+  },
+  {
+    id: "d3-082",
+    source: "ai-generated",
+    domain: "claude-code-config",
+    scenario: "ci-cd",
+    question:
+      "Your automated code review averages 15 findings per pull request, with developers reporting a 40% false positive rate. The bottleneck is investigation time: developers must click into each finding to read Claude's reasoning before deciding whether to address or dismiss it. Your CLAUDE.md already contains comprehensive rules for acceptable patterns, and stakeholders have rejected any approach that filters findings before developer review. What change would best address the investigation time bottleneck?",
+    options: [
+      "Require Claude to include its reasoning and confidence assessment inline with each finding.",
+      "Categorize findings as 'blocking issues' versus 'suggestions' with tiered review requirements.",
+      "Configure Claude to only surface findings it assesses as high confidence, filtering out uncertain flags before developers see them.",
+      "Add a post-processor that analyzes finding patterns and automatically suppresses those matching historical false positive signatures.",
+    ],
+    correctIndex: 0,
+    explanation:
+      "Inline reasoning and a confidence assessment with each finding directly cut investigation time: developers can triage from the comment list without clicking into each one. This respects the constraint that nothing is filtered before review. Tiering changes labels but doesn't reduce per-finding investigation, and the confidence-based filter and post-processor both suppress findings before developers see them, violating the stated constraint.",
+  },
+  {
+    id: "d3-083",
+    source: "ai-generated",
+    domain: "claude-code-config",
+    scenario: "ci-cd",
+    question:
+      "After an initial automated review generates 12 findings, a developer pushes new commits to address the issues. When the review runs again, it produces 8 findings, but developers report that 5 duplicate earlier comments on code that was already fixed in the new commits. What's the most effective way to eliminate this redundant feedback while maintaining thorough analysis?",
+    options: [
+      "Add a post-processing filter that removes findings matching previous file paths and issue descriptions before posting comments.",
+      "Include prior review findings in context, instructing Claude to only report new or still-unaddressed issues.",
+      "Run reviews only on initial PR creation and final pre-merge state, skipping intermediate commits.",
+      "Restrict the review scope to only files modified in the most recent push, excluding files from earlier commits.",
+    ],
+    correctIndex: 1,
+    explanation:
+      "Providing the prior review findings as context lets Claude reason about each one and report only what is new or still unaddressed, preserving thorough analysis without redundant comments. A path/description filter is brittle because phrasing varies between runs, skipping intermediate commits hides useful feedback during iteration, and restricting scope to recently changed files misses cross-file regressions introduced by the fixes.",
+  },
+  {
+    id: "d3-084",
+    source: "ai-generated",
+    domain: "claude-code-config",
+    scenario: "ci-cd",
+    question:
+      "Your CI/CD system performs three types of Claude-powered analysis: (1) quick style checks on each PR that block merging until complete, (2) comprehensive security audits of the entire codebase run weekly, and (3) test case generation triggered nightly for recently-modified modules. The Message Batches API offers 50% cost savings but can take up to 24 hours to process. You want to optimize API costs while maintaining acceptable developer experience. Which combination correctly matches each task to its API approach?",
+    options: [
+      "Use the Message Batches API for all three tasks to maximize the 50% cost savings, and configure the pipeline to poll for batch completion.",
+      "Use synchronous calls for PR style checks and nightly test generation; use Message Batches API only for weekly security audits.",
+      "Use synchronous calls for all three tasks for consistent response times, and rely on prompt caching to reduce costs across all workloads.",
+      "Use synchronous calls for PR style checks; use the Message Batches API for weekly security audits and nightly test generation.",
+    ],
+    correctIndex: 3,
+    explanation:
+      "PR style checks block developers on merge and need synchronous responses, while weekly security audits and nightly test generation are scheduled tasks whose timelines easily absorb the up-to-24-hour batch window, capturing the 50% savings on both. Batching everything would block merges, batching only the audit leaves nightly test generation paying full price unnecessarily, and going fully synchronous gives up batch savings entirely.",
+  },
+  {
+    id: "d3-085",
+    source: "ai-generated",
+    domain: "claude-code-config",
+    scenario: "ci-cd",
+    question:
+      "Your team wants to reduce API costs for automated analysis. Currently, real-time Claude calls power two workflows: (1) a blocking pre-merge check that must complete before developers can merge, and (2) a technical debt report generated overnight for review the next morning. Your manager proposes switching both to the Message Batches API for its 50% cost savings. How should you evaluate this proposal?",
+    options: [
+      "Switch both to batch processing with a timeout fallback to real-time if batches take too long.",
+      "Use batch processing for the technical debt reports only; keep real-time calls for pre-merge checks.",
+      "Switch both workflows to batch processing with status polling to check for completion.",
+      "Keep real-time calls for both workflows to avoid batch result ordering issues.",
+    ],
+    correctIndex: 1,
+    explanation:
+      "The Message Batches API's up-to-24-hour processing window with no guaranteed latency SLA fits overnight technical debt reports but blocks developers if applied to pre-merge checks where they're waiting. Matching each workflow to the right API captures the 50% savings where latency is flexible and preserves responsiveness where it isn't. A timeout fallback adds complexity for the same blocking problem, and keeping everything real-time gives up the easy savings on the report.",
+  },
 
   // ---- Domain 4: Prompt Engineering (Claude API course) ----
   {
@@ -3681,16 +4633,16 @@ export const questions: Question[] = [
     source: "ai-generated",
     domain: "prompt-engineering",
     question:
-      "You build a reusable chat() helper that accepts an optional system prompt. Why must the code conditionally add the system key instead of always passing system=system?",
+      "Your reusable chat() helper accepts an optional system prompt. Why should the code add the system key to the request only when a value is provided, instead of always including it?",
     options: [
-      "The Anthropic API rejects system=None, so it must be included only when set",
-      "Passing system=None silently doubles token cost on every request made",
+      "The API rejects a null system value, so include the key only when set",
+      "Passing a null system silently doubles token cost on every request made",
       "system must always be the first element inside the messages list array",
       "The API requires system to be merged into the final user message content",
     ],
     correctIndex: 0,
     explanation:
-      "system is an optional top-level parameter. The API does not accept system=None, so a flexible chat function builds the params dict and adds the system key only when a system prompt was actually provided.",
+      "system is an optional top-level parameter, and the API rejects a null value. A flexible chat helper builds its params dict and adds the system key only when a system prompt was actually provided.",
   },
   {
     id: "d4-095",
@@ -3725,6 +4677,57 @@ export const questions: Question[] = [
     correctIndex: 1,
     explanation:
       "Code-based syntax validators try to parse the output (json.loads, ast.parse, re.compile). Successful parsing returns 10; a parse error returns 0. Code graders handle deterministic checks like format and syntax, while a model grader assesses task-following quality, and the scores are combined.",
+  },
+  {
+    id: "d4-097",
+    source: "ai-generated",
+    domain: "prompt-engineering",
+    scenario: "ci-cd",
+    question:
+      "Your automated code review system shows inconsistent severity ratings: similar issues like null pointer risks receive 'critical' severity in some PRs but only 'medium' in others. Developer trust is declining because teams can't predict which findings require immediate attention. What's the most effective way to improve severity consistency?",
+    options: [
+      "Request that Claude include its reasoning for each severity assignment, then use that reasoning to manually calibrate and adjust ratings during review.",
+      "Add a CLAUDE.md file that lists issue types and their default severities, instructing Claude to reference this mapping when assigning ratings.",
+      "Include explicit severity criteria in your prompt with concrete code examples for each severity level.",
+      "Modify the prompt to ask Claude to rate severity relative to other issues in the same PR, so the most severe issue is always marked critical and others rated proportionally.",
+    ],
+    correctIndex: 2,
+    explanation:
+      "Explicit severity criteria with concrete code examples for each level remove ambiguity about what each severity means and give the model stable reference points for classification, which directly addresses the inconsistency. Manual calibration after the fact doesn't fix the model's behavior, type-to-severity tables miss context (the same defect can be critical in one path and minor in another), and relative ranking forces a 'critical' label even when nothing in the PR actually is.",
+  },
+  {
+    id: "d4-098",
+    source: "ai-generated",
+    domain: "prompt-engineering",
+    scenario: "ci-cd",
+    question:
+      "Your automated reviews identify valid issues but developers report the feedback isn't actionable. Findings say things like 'complex ticket allocation logic' or 'potential null pointer' without specifying what to change. When you add detailed instructions like 'always include specific fix suggestions,' the model still produces inconsistent output: sometimes detailed, sometimes vague. What prompting technique would most reliably produce consistently actionable feedback?",
+    options: [
+      "Further refine the instructions with more explicit requirements for each part of the feedback format (location, issue, severity, suggested fix).",
+      "Expand the context window to include more of the surrounding codebase so the model has sufficient information to suggest specific fixes.",
+      "Add 3-4 few-shot examples showing the exact format you want: issue identified, code location, specific fix suggestion.",
+      "Implement a two-pass approach where one prompt identifies issues and a second prompt generates fixes, allowing specialization.",
+    ],
+    correctIndex: 2,
+    explanation:
+      "When abstract instructions produce variable results, few-shot examples are the most reliable way to lock in a consistent output format. Three or four examples showing the exact pattern (issue, location, specific fix) give the model a concrete template to mimic. More detailed instructions chase the same indirect lever, broader codebase context doesn't address formatting, and a two-pass pipeline adds cost and complexity to fix a presentation problem.",
+  },
+  {
+    id: "d4-099",
+    source: "ai-generated",
+    domain: "prompt-engineering",
+    scenario: "ci-cd",
+    question:
+      "Your automated review analyzes comments and docstrings. The current prompt instructs Claude to 'check that comments are accurate and up-to-date.' Findings frequently flag acceptable patterns (TODO markers, straightforward descriptions) while missing comments that describe behavior the code no longer implements. What change addresses the root cause of this inconsistent analysis?",
+    options: [
+      "Include git blame data so Claude can identify comments that predate recent code modifications.",
+      "Specify explicit criteria: flag comments only when their claimed behavior contradicts actual code behavior.",
+      "Filter out TODO, FIXME, and descriptive comment patterns before analysis to reduce noise.",
+      "Add few-shot examples of misleading comments to help the model recognize similar patterns in the codebase.",
+    ],
+    correctIndex: 1,
+    explanation:
+      "Replacing the vague instruction with explicit criteria (flag a comment only when its claimed behavior contradicts the actual code behavior) gives the model a precise definition of the problem to detect, eliminating both the false positives on acceptable patterns and the false negatives on genuinely misleading comments. Git blame data is a weak proxy for accuracy, pattern-based filtering misses the underlying contradiction question, and few-shot examples help with familiar patterns but don't define the criterion.",
   },
 
   // ---- Domain 5: Context Management (Claude API features) ----
@@ -3863,5 +4866,22 @@ export const questions: Question[] = [
     correctIndex: 0,
     explanation:
       "Anthropic does not currently offer embedding generation. The course recommends a separate provider such as VoyageAI (e.g., voyage-3-large) with its own API key for producing chunk and query embeddings.",
+  },
+  {
+    id: "d5-115",
+    source: "ai-generated",
+    domain: "context-management",
+    scenario: "customer-support",
+    question:
+      "Your support agent uses progressive summarization: when context reaches 70% capacity, older turns are summarized while recent ones remain verbatim. Production logs reveal a pattern: customers reference specific amounts ('the 15% discount I mentioned'), but the agent responds with incorrect values. Investigation shows these details were stated 20+ turns ago and got condensed into vague summaries like 'discussed promotional pricing.' What's the most effective fix?",
+    options: [
+      "Extract transactional facts (amounts, dates, order numbers) into a persistent 'case facts' block included in each prompt, outside the summarized history.",
+      "Store full conversation history externally and implement retrieval to search it when the agent detects reference phrases like 'as I mentioned.'",
+      "Increase the summarization threshold from 70% to 85% capacity so conversations have more room before summarization triggers.",
+      "Revise the summarization prompt to explicitly preserve all numerical values, percentages, dates, and customer-stated expectations verbatim.",
+    ],
+    correctIndex: 0,
+    explanation:
+      "Summarization is inherently lossy for precise details. Extracting transactional facts (amounts, dates, order numbers) into a persistent 'case facts' block kept outside the summarized history ensures those critical values remain reliably available in every prompt, regardless of how many turns are summarized. External retrieval depends on detecting reference phrases the agent may miss, raising the threshold only delays the same loss, and even a stricter summarization prompt cannot guarantee verbatim preservation across many turns.",
   },
 ];

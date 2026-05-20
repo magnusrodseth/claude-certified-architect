@@ -327,6 +327,20 @@ function HomeScreen({
               </div>
             </button>
             <button
+              className="mode-card anthropic-cert-card"
+              onClick={() => startQuiz("anthropic-cert-practice")}
+            >
+              <div className="mode-title">
+                Anthropic Developer Certification Practice Exam
+              </div>
+              <div className="mode-desc">
+                Certification Assessment. Scenarios: 4 randomly selected.
+                Questions per scenario: 15. Total questions: 60. Passing score:
+                720. Time limit: 90 minutes. Practice mode, explanations shown
+                after each answer.
+              </div>
+            </button>
+            <button
               className="mode-card"
               onClick={() => startQuiz("weighted-practice")}
             >

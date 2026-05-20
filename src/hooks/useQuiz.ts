@@ -78,6 +78,27 @@ const WEIGHTED_DOMAINS: Domain[] = [
   "context-management",
 ];
 
+// 60 questions transcribed from the official Anthropic Developer Certification
+// Practice Exam, grouped by its four scenarios (15 per scenario).
+const ANTHROPIC_CERT_PRACTICE_IDS: ReadonlySet<string> = new Set([
+  // Code Generation with Claude Code
+  "d3-060", "d3-061", "d3-062", "d3-063", "d3-064",
+  "d3-065", "d3-066", "d3-067", "d3-068", "d3-069",
+  "d3-070", "d3-071", "d3-072", "d3-073", "d3-074",
+  // Multi-Agent Research System
+  "d1-087", "d1-088", "d1-089", "d1-090", "d1-091",
+  "d1-092", "d1-093", "d1-094", "d1-095", "d1-096",
+  "d1-097", "d1-098", "d1-099", "d1-100", "d1-101",
+  // Customer Support Resolution Agent
+  "d5-115", "d2-091", "d2-092", "d1-102", "d1-103",
+  "d2-093", "d1-104", "d1-105", "d2-094", "d1-106",
+  "d2-095", "d1-107", "d1-108", "d2-096", "d1-109",
+  // Claude Code for Continuous Integration
+  "d3-075", "d3-076", "d3-077", "d1-110", "d3-078",
+  "d4-097", "d3-079", "d3-080", "d4-098", "d3-081",
+  "d3-082", "d4-099", "d3-083", "d3-084", "d3-085",
+]);
+
 /**
  * Draw `total` questions from `pool`, with each domain's share proportional to
  * its official exam weight (DOMAIN_WEIGHTS). Largest-remainder rounding makes
@@ -180,6 +201,14 @@ export function useQuiz(
         // Longer exam-realistic drill from the full pool (official +
         // AI-generated), still domain-weighted.
         filtered = weightedSample(questions, 60);
+      } else if (mode === "anthropic-cert-practice") {
+        // Fixed 60-question set transcribed from the official Anthropic
+        // Developer Certification Practice Exam. Order is preserved from the
+        // source (15 per scenario, four scenarios).
+        const byId = new Map(questions.map((q) => [q.id, q]));
+        filtered = [...ANTHROPIC_CERT_PRACTICE_IDS]
+          .map((id) => byId.get(id))
+          .filter((q): q is Question => q !== undefined);
       } else if (mode === "review") {
         const missed = loadHistory().flatMap((h) =>
           Object.entries(h.domainScores)
@@ -194,7 +223,11 @@ export function useQuiz(
       } else {
         filtered = [...questions];
       }
-      const shuffled = (customQuestions ? filtered : shuffle(filtered)).map(
+      // Preserve order for caller-supplied questions and for the fixed
+      // Anthropic cert practice set (grouped by scenario); otherwise shuffle.
+      const preserveOrder =
+        Boolean(customQuestions) || mode === "anthropic-cert-practice";
+      const shuffled = (preserveOrder ? filtered : shuffle(filtered)).map(
         shuffleQuestionOptions
       );
       setActiveQuestions(shuffled);
