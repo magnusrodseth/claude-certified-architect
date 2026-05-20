@@ -21,13 +21,6 @@ function App() {
   const navigate = useNavigate();
   const { stats, recordAnswer, getSmartReviewQuestions, clearProgress } =
     useProgress();
-  const recordOfficialAnswer = useCallback(
-    (questionId: string, correct: boolean, question: Question) => {
-      if (question.source === "ai-generated") return;
-      recordAnswer(questionId, correct);
-    },
-    [recordAnswer]
-  );
 
   const {
     currentQuestion,
@@ -45,7 +38,7 @@ function App() {
     clearHistory,
     hasActiveSession,
     state,
-  } = useQuiz(recordOfficialAnswer);
+  } = useQuiz(recordAnswer);
 
   const startQuiz = useCallback(
     (
@@ -295,6 +288,17 @@ function HomeScreen({
             </div>
           </section>
         )}
+
+        <aside className="info-callout" role="note">
+          <span className="info-callout-badge">AI-generated practice</span>
+          <p>
+            Some questions in the bank carry this badge. They were authored
+            with AI from course material, so treat their explanations as
+            guidance rather than gospel. They count toward your progress and
+            appear in every mode except Practice Exam, which uses official
+            exam-guide questions only.
+          </p>
+        </aside>
 
         {/* Study Modes */}
         <section className="mode-section">
