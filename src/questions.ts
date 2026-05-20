@@ -3628,23 +3628,6 @@ export const questions: Question[] = [
       "The course shows datasets can be built by hand or generated automatically by Claude, and that test-data generation is a perfect place to use a faster, cheaper model like Haiku since the task does not require the strongest model. Keeping case counts low during development speeds iteration.",
   },
   {
-    id: "d4-090",
-    source: "ai-generated",
-    domain: "prompt-engineering",
-    scenario: "developer-productivity",
-    question:
-      "In the eval pipeline from 'Running the eval', what is the specific responsibility of the run_test_case function relative to run_prompt and run_eval?",
-    options: [
-      "It loads dataset.json and iterates over every test case in the file",
-      "It merges the prompt template with the test case input and returns raw output",
-      "It calls run_prompt for one case, then grades that output and returns a score",
-      "It averages all individual scores into one final evaluation metric",
-    ],
-    correctIndex: 2,
-    explanation:
-      "run_prompt merges the template with one test case's input and returns Claude's output. run_test_case orchestrates a single case: it calls run_prompt, then grades the result and returns output, test_case, and score. run_eval loads the dataset and loops run_test_case over every case.",
-  },
-  {
     id: "d4-091",
     source: "ai-generated",
     domain: "prompt-engineering",
