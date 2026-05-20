@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { Routes, Route, useNavigate, Navigate } from "react-router-dom";
 import "./App.css";
@@ -9,6 +9,12 @@ import { DomainRadar } from "./components/DomainRadar";
 import { generatedQuestions } from "./generatedQuestions";
 import { DOMAIN_LABELS, DOMAIN_WEIGHTS, SCENARIO_LABELS } from "./types";
 import type { Domain, Scenario, QuizState, Question } from "./types";
+import {
+  exportToFile,
+  parseBundle,
+  applyImport,
+  type ImportMode,
+} from "./lib/syncData";
 
 function App() {
   const navigate = useNavigate();
@@ -417,6 +423,8 @@ function HomeScreen({
           </section>
         )}
 
+        <SyncSection />
+
         <div className="home-footer">
           <button
             className="btn-link danger"
@@ -445,6 +453,135 @@ function HomeScreen({
         </section>
       </main>
     </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Sync Section
+// ---------------------------------------------------------------------------
+
+function SyncSection() {
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [status, setStatus] = useState<
+    | { kind: "idle" }
+    | { kind: "success"; text: string }
+    | { kind: "error"; text: string }
+  >({ kind: "idle" });
+
+  const handleExport = useCallback(() => {
+    try {
+      exportToFile();
+      setStatus({ kind: "success", text: "Exported progress to a JSON file." });
+    } catch (err) {
+      const text = err instanceof Error ? err.message : "Export failed.";
+      setStatus({ kind: "error", text });
+    }
+  }, []);
+
+  const handlePickFile = useCallback(() => {
+    fileInputRef.current?.click();
+  }, []);
+
+  const handleFileChosen = useCallback(
+    async (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      // Reset so picking the same file twice still fires onChange.
+      e.target.value = "";
+      if (!file) return;
+
+      try {
+        const text = await file.text();
+        const bundle = parseBundle(text);
+
+        const wantsMerge = window.confirm(
+          "Merge the imported data with your existing progress?\n\n" +
+            "OK = Merge (combine attempts, study days, and quiz history)\n" +
+            "Cancel = Replace (overwrite this device with the file)",
+        );
+        let mode: ImportMode = wantsMerge ? "merge" : "replace";
+
+        if (mode === "replace") {
+          const confirmReplace = window.confirm(
+            "Replace will overwrite the progress on this device. Continue?",
+          );
+          if (!confirmReplace) {
+            setStatus({ kind: "idle" });
+            return;
+          }
+        }
+
+        const summary = applyImport(bundle, mode);
+        setStatus({
+          kind: "success",
+          text:
+            `${mode === "merge" ? "Merged" : "Replaced"} successfully: ` +
+            `${summary.totalQuestionsTracked} questions tracked, ` +
+            `${summary.totalHistoryEntries} quiz sessions, ` +
+            `${summary.totalStudyDays} study days. Reloading…`,
+        });
+        // Hooks read localStorage only on mount, so reload to pick up state.
+        setTimeout(() => window.location.reload(), 600);
+      } catch (err) {
+        const text = err instanceof Error ? err.message : "Import failed.";
+        setStatus({ kind: "error", text });
+      }
+    },
+    [],
+  );
+
+  return (
+    <section className="mode-section sync-section">
+      <h2>Sync Progress</h2>
+      <p className="sync-explainer">
+        Your progress, mastery, and quiz history live in this browser only.
+        Export a JSON snapshot, then import it on another device to keep
+        machines in sync.
+      </p>
+      <p className="sync-explainer">
+        Useful when you study on more than one computer, want a backup before
+        clearing browser data, or are switching browsers.
+      </p>
+
+      <div className="sync-callout">
+        <div className="sync-callout-header">
+          <span className="sync-callout-icon" aria-hidden="true">
+            ⇄
+          </span>
+          <div>
+            <div className="sync-callout-title">Export & Import</div>
+            <div className="sync-callout-sub">
+              <strong>Merge</strong> combines two datasets ·{" "}
+              <strong>Replace</strong> overwrites this device
+            </div>
+          </div>
+        </div>
+        <div className="sync-actions">
+          <button className="btn primary" onClick={handleExport}>
+            Export to file
+          </button>
+          <button className="btn" onClick={handlePickFile}>
+            Import from file
+          </button>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="application/json,.json"
+            onChange={handleFileChosen}
+            style={{ display: "none" }}
+          />
+        </div>
+        <p className="sync-tip">
+          Tip: export at the end of each session on whichever machine you used.
+        </p>
+        {status.kind !== "idle" && (
+          <div
+            className={`sync-status ${status.kind === "error" ? "error" : "success"}`}
+          >
+            {status.text}
+          </div>
+        )}
+      </div>
+    </section>
   );
 }
 
