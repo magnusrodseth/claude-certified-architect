@@ -7,6 +7,7 @@ import {
   Tooltip,
 } from "recharts";
 import type { Domain } from "../types";
+import { useTheme } from "../hooks/useTheme";
 
 interface DomainStat {
   total: number;
@@ -28,6 +29,7 @@ const LABELS: { key: Domain; short: string }[] = [
 ];
 
 export function DomainRadar({ domainStats }: Props) {
+  const { colors } = useTheme();
   const data = LABELS.map(({ key, short }) => {
     const ds = domainStats[key];
     return {
@@ -42,18 +44,18 @@ export function DomainRadar({ domainStats }: Props) {
       <h3>Domain Mastery Radar</h3>
       <ResponsiveContainer width="100%" height={220}>
         <RadarChart data={data} cx="50%" cy="50%" outerRadius="70%">
-          <PolarGrid stroke="#333" />
+          <PolarGrid stroke={colors.grid} />
           <PolarAngleAxis
             dataKey="domain"
-            tick={{ fill: "#a8a29e", fontSize: 11 }}
+            tick={{ fill: colors.muted, fontSize: 11 }}
           />
           <Tooltip
             contentStyle={{
-              background: "#242424",
-              border: "1px solid #333",
+              background: colors.card,
+              border: `1px solid ${colors.border}`,
               borderRadius: 8,
               fontSize: 12,
-              color: "#f5f5f4",
+              color: colors.text,
             }}
             formatter={(value, name) => [
               `${value}%`,
@@ -63,16 +65,16 @@ export function DomainRadar({ domainStats }: Props) {
           <Radar
             name="seen"
             dataKey="seen"
-            stroke="#555"
-            fill="#444"
-            fillOpacity={0.3}
+            stroke={colors.muted}
+            fill={colors.muted}
+            fillOpacity={0.2}
           />
           <Radar
             name="mastery"
             dataKey="mastery"
-            stroke="#d97757"
-            fill="#d97757"
-            fillOpacity={0.3}
+            stroke={colors.accent}
+            fill={colors.accent}
+            fillOpacity={0.35}
           />
         </RadarChart>
       </ResponsiveContainer>

@@ -6,6 +6,7 @@ import { useQuiz } from "./hooks/useQuiz";
 import { useProgress } from "./hooks/useProgress";
 import { ScoreChart } from "./components/ScoreChart";
 import { DomainRadar } from "./components/DomainRadar";
+import { ThemeSwitcher } from "./components/ThemeSwitcher";
 import { generatedQuestions } from "./generatedQuestions";
 import { DOMAIN_LABELS, DOMAIN_WEIGHTS, SCENARIO_LABELS } from "./types";
 import type { Domain, Scenario, QuizState, Question } from "./types";
@@ -172,6 +173,7 @@ function HomeScreen({
     <div className="app">
       <header className="home-header">
         <div className="social-links">
+          <ThemeSwitcher />
           <a
             href="https://github.com/magnusrodseth"
             target="_blank"
@@ -733,6 +735,7 @@ function QuizScreen({
           <span className="domain-tag">
             {DOMAIN_LABELS[currentQuestion.domain]}
           </span>
+          <ThemeSwitcher />
         </div>
       </header>
       <main className="quiz">
@@ -840,6 +843,9 @@ function ResultsScreen({ results, resetQuiz, goHome }: ResultsScreenProps) {
           ANTHROPIC
         </button>
         <h1>Quiz Complete</h1>
+        <div className="results-header-actions">
+          <ThemeSwitcher />
+        </div>
       </header>
       <main className="results">
         <div className={`score-card ${passed ? "pass" : "fail"}`}>
