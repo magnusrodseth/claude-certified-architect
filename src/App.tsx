@@ -655,6 +655,8 @@ function CopyForAI({
       `Correct answer: ${correctL}. ${correctText}`,
       "",
       `Provided explanation:\n${question.explanation}`,
+      "",
+      "Finally, illustrate the concept with a concrete example (code snippet, configuration, or short scenario) so I can see it applied in practice.",
     ].join("\n");
   };
 
