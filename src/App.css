@@ -274,6 +274,73 @@ h1 {
   white-space: nowrap;
 }
 
+.stopwatch {
+  font-family: var(--font-mono);
+  font-size: 0.9rem;
+  color: var(--accent);
+  background: var(--accent-soft);
+  padding: 0.25rem 0.6rem;
+  border-radius: 99px;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.quiz-prefs {
+  margin: 1.5rem 0 0.5rem;
+  padding: 1rem 1.25rem;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+}
+
+.stopwatch-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-size: 0.95rem;
+  cursor: pointer;
+  user-select: none;
+}
+
+.stopwatch-toggle input {
+  width: 1.05rem;
+  height: 1.05rem;
+  cursor: pointer;
+}
+
+.quiz-prefs-hint {
+  margin: 0.5rem 0 0;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.time-card {
+  margin: 1rem 0 0;
+  padding: 1rem 1.25rem;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.time-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.95rem;
+}
+
+.time-label {
+  color: var(--text-muted);
+}
+
+.time-value {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  color: var(--accent);
+}
+
 .domain-tag {
   font-size: 0.75rem;
   color: var(--accent);

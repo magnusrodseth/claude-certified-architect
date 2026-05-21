@@ -17,8 +17,47 @@ import {
   type ImportMode,
 } from "./lib/syncData";
 
+const STOPWATCH_PREF_KEY = "claude-cert-stopwatch";
+
+function formatDuration(ms: number): string {
+  const totalSec = Math.max(0, Math.floor(ms / 1000));
+  const h = Math.floor(totalSec / 3600);
+  const m = Math.floor((totalSec % 3600) / 60);
+  const s = totalSec % 60;
+  const pad = (n: number) => n.toString().padStart(2, "0");
+  return h > 0 ? `${h}:${pad(m)}:${pad(s)}` : `${pad(m)}:${pad(s)}`;
+}
+
+function Stopwatch({ startedAt }: { startedAt: number }) {
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const id = window.setInterval(() => setNow(Date.now()), 1000);
+    return () => window.clearInterval(id);
+  }, []);
+  return (
+    <span className="stopwatch" title="Elapsed time" aria-live="off">
+      ⏱ {formatDuration(now - startedAt)}
+    </span>
+  );
+}
+
 function App() {
   const navigate = useNavigate();
+  const [showStopwatch, setShowStopwatch] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem(STOPWATCH_PREF_KEY) === "1";
+    } catch {
+      return false;
+    }
+  });
+  useEffect(() => {
+    try {
+      localStorage.setItem(STOPWATCH_PREF_KEY, showStopwatch ? "1" : "0");
+    } catch {
+      /* ignore */
+    }
+  }, [showStopwatch]);
+
   const {
     stats,
     recordAnswer,
@@ -85,6 +124,8 @@ function App() {
             getSmartReviewQuestions={getSmartReviewQuestions}
             getWeakAndUnseenQuestions={getWeakAndUnseenQuestions}
             resumeQuiz={() => navigate("/quiz")}
+            showStopwatch={showStopwatch}
+            setShowStopwatch={setShowStopwatch}
           />
         }
       />
@@ -102,6 +143,7 @@ function App() {
               nextQuestion={nextQuestion}
               toggleFlag={toggleFlag}
               goHome={goHome}
+              showStopwatch={showStopwatch}
             />
           ) : isComplete && results ? (
             <Navigate to="/results" replace />
@@ -118,6 +160,9 @@ function App() {
               results={results}
               resetQuiz={resetQuiz}
               goHome={goHome}
+              showStopwatch={showStopwatch}
+              startedAt={state.startedAt}
+              completedAt={state.completedAt}
             />
           ) : (
             <Navigate to="/" replace />
@@ -151,6 +196,8 @@ interface HomeScreenProps {
   getSmartReviewQuestions: () => Question[];
   getWeakAndUnseenQuestions: () => Question[];
   resumeQuiz: () => void;
+  showStopwatch: boolean;
+  setShowStopwatch: (v: boolean) => void;
 }
 
 function HomeScreen({
@@ -166,6 +213,8 @@ function HomeScreen({
   getSmartReviewQuestions,
   getWeakAndUnseenQuestions,
   resumeQuiz,
+  showStopwatch,
+  setShowStopwatch,
 }: HomeScreenProps) {
   const domains = Object.keys(DOMAIN_LABELS) as Domain[];
   const scenarios = Object.keys(SCENARIO_LABELS) as Scenario[];
@@ -308,6 +357,22 @@ function HomeScreen({
             exam-guide questions only.
           </p>
         </aside>
+
+        {/* Quiz Preferences */}
+        <section className="quiz-prefs">
+          <label className="stopwatch-toggle">
+            <input
+              type="checkbox"
+              checked={showStopwatch}
+              onChange={(e) => setShowStopwatch(e.target.checked)}
+            />
+            <span>Show stopwatch during quizzes</span>
+          </label>
+          <p className="quiz-prefs-hint">
+            Adds a live elapsed-time counter to the quiz header and reports
+            total time + average per question on the results screen.
+          </p>
+        </section>
 
         {/* Study Modes */}
         <section className="mode-section">
@@ -646,6 +711,7 @@ interface QuizScreenProps {
   nextQuestion: () => void;
   toggleFlag: () => void;
   goHome: () => void;
+  showStopwatch: boolean;
 }
 
 function CopyForAI({
@@ -894,6 +960,7 @@ function QuizScreen({
   nextQuestion,
   toggleFlag,
   goHome,
+  showStopwatch,
 }: QuizScreenProps) {
   const questionId = currentQuestion?.id;
   useEffect(() => {
@@ -928,6 +995,9 @@ function QuizScreen({
           <span className="progress">
             {progress} / {total}
           </span>
+          {showStopwatch && state.startedAt && (
+            <Stopwatch startedAt={state.startedAt} />
+          )}
           <span className="domain-tag">
             {DOMAIN_LABELS[currentQuestion.domain]}
           </span>
@@ -1025,12 +1095,31 @@ interface ResultsScreenProps {
   };
   resetQuiz: () => void;
   goHome: () => void;
+  showStopwatch: boolean;
+  startedAt?: number;
+  completedAt?: number;
 }
 
-function ResultsScreen({ results, resetQuiz, goHome }: ResultsScreenProps) {
+function ResultsScreen({
+  results,
+  resetQuiz,
+  goHome,
+  showStopwatch,
+  startedAt,
+  completedAt,
+}: ResultsScreenProps) {
   const domains = Object.keys(DOMAIN_LABELS) as Domain[];
   const pct = Math.round((results.correct / results.total) * 100);
   const passed = pct >= 72;
+
+  const durationMs =
+    showStopwatch && startedAt && completedAt
+      ? Math.max(0, completedAt - startedAt)
+      : null;
+  const avgSecPerQuestion =
+    durationMs !== null && results.total > 0
+      ? durationMs / 1000 / results.total
+      : null;
 
   return (
     <div className="app">
@@ -1053,6 +1142,20 @@ function ResultsScreen({ results, resetQuiz, goHome }: ResultsScreenProps) {
             {passed ? "PASSING" : "BELOW PASSING"} (72% required)
           </div>
         </div>
+        {durationMs !== null && avgSecPerQuestion !== null && (
+          <div className="time-card">
+            <div className="time-row">
+              <span className="time-label">Total time</span>
+              <span className="time-value">{formatDuration(durationMs)}</span>
+            </div>
+            <div className="time-row">
+              <span className="time-label">Average per question</span>
+              <span className="time-value">
+                {avgSecPerQuestion.toFixed(1)}s
+              </span>
+            </div>
+          </div>
+        )}
         <h2>Domain Breakdown</h2>
         <div className="domain-grid">
           {domains.map((d) => {

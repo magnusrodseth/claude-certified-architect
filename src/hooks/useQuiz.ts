@@ -318,8 +318,12 @@ export function useQuiz(
     }
     if (!results || recordedRef.current) return;
     recordedRef.current = true;
+    const completedAt = Date.now();
+    setState((s) =>
+      s.completedAt ? s : { ...s, completedAt }
+    );
     const entry: QuizHistory = {
-      date: Date.now(),
+      date: completedAt,
       mode: state.mode,
       total: results.total,
       correct: results.correct,
