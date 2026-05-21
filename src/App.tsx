@@ -9,6 +9,7 @@ import { ScoreChart } from "./components/ScoreChart";
 import { DomainRadar } from "./components/DomainRadar";
 import { ThemeSwitcher } from "./components/ThemeSwitcher";
 import { generatedQuestions } from "./generatedQuestions";
+import { longFormQuestions } from "./longFormQuestions";
 import { DOMAIN_LABELS, DOMAIN_WEIGHTS, SCENARIO_LABELS } from "./types";
 import type { Domain, Scenario, QuizState, Question } from "./types";
 import {
@@ -485,6 +486,23 @@ function HomeScreen({
               <div className="mode-title">AI Practice</div>
               <div className="mode-desc">
                 Generated exam-style questions, separate from official study-guide modes
+              </div>
+            </button>
+            <button
+              className="mode-card ai-card"
+              onClick={() =>
+                startQuiz(
+                  "long-form-practice",
+                  undefined,
+                  undefined,
+                  longFormQuestions
+                )
+              }
+            >
+              <div className="mode-title">Long-Form Scenarios (AI)</div>
+              <div className="mode-desc">
+                {longFormQuestions.length} multi-sentence scenarios targeting the
+                failure patterns from the last practice exam reflection
               </div>
             </button>
           </div>

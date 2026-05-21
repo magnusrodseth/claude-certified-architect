@@ -71,7 +71,8 @@ export interface QuizState {
     | "all"
     | "ai-practice"
     | "weighted-practice"
-    | "anthropic-cert-practice";
+    | "anthropic-cert-practice"
+    | "long-form-practice";
   selectedDomain?: Domain;
   selectedScenario?: Scenario;
   startedAt?: number;
