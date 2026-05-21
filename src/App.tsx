@@ -19,8 +19,13 @@ import {
 
 function App() {
   const navigate = useNavigate();
-  const { stats, recordAnswer, getSmartReviewQuestions, clearProgress } =
-    useProgress();
+  const {
+    stats,
+    recordAnswer,
+    getSmartReviewQuestions,
+    getWeakAndUnseenQuestions,
+    clearProgress,
+  } = useProgress();
 
   const {
     currentQuestion,
@@ -78,6 +83,7 @@ function App() {
             clearHistory={clearHistory}
             clearProgress={clearProgress}
             getSmartReviewQuestions={getSmartReviewQuestions}
+            getWeakAndUnseenQuestions={getWeakAndUnseenQuestions}
             resumeQuiz={() => navigate("/quiz")}
           />
         }
@@ -143,6 +149,7 @@ interface HomeScreenProps {
   clearHistory: () => void;
   clearProgress: () => void;
   getSmartReviewQuestions: () => Question[];
+  getWeakAndUnseenQuestions: () => Question[];
   resumeQuiz: () => void;
 }
 
@@ -157,6 +164,7 @@ function HomeScreen({
   clearHistory,
   clearProgress,
   getSmartReviewQuestions,
+  getWeakAndUnseenQuestions,
   resumeQuiz,
 }: HomeScreenProps) {
   const domains = Object.keys(DOMAIN_LABELS) as Domain[];
@@ -315,6 +323,24 @@ function HomeScreen({
               <div className="mode-title">Smart Review</div>
               <div className="mode-desc">
                 Prioritizes unseen, weak, and stale questions
+              </div>
+            </button>
+            <button
+              className="mode-card weak-unseen"
+              onClick={() => {
+                const ordered = getWeakAndUnseenQuestions();
+                if (ordered.length === 0) {
+                  window.alert(
+                    "Nothing to drill: you have no unseen questions and no questions wrong on last attempt."
+                  );
+                  return;
+                }
+                startQuiz("review", undefined, undefined, ordered);
+              }}
+            >
+              <div className="mode-title">Weak & Unseen</div>
+              <div className="mode-desc">
+                {stats.unseen} unseen + {stats.weak} weak. Quickest mastery wins.
               </div>
             </button>
             <button className="mode-card" onClick={() => startQuiz("all")}>

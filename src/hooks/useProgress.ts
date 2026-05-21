@@ -131,6 +131,24 @@ export function useProgress() {
     };
   }, [progress]);
 
+  // Weak + unseen only: questions never attempted, plus questions whose last
+  // attempt was wrong. Unseen first, then weak.
+  const getWeakAndUnseenQuestions = useCallback(() => {
+    const records = progress.questionRecords;
+    const unseen: typeof questions = [];
+    const weak: typeof questions = [];
+    for (const q of questions) {
+      const rec = records[q.id];
+      if (!rec || rec.attempts.length === 0) {
+        unseen.push(q);
+        continue;
+      }
+      const last = rec.attempts[rec.attempts.length - 1];
+      if (!last.correct) weak.push(q);
+    }
+    return [...unseen, ...weak];
+  }, [progress]);
+
   // Smart review: prioritize unseen, then weak, then least recently seen
   const getSmartReviewQuestions = useCallback(() => {
     const records = progress.questionRecords;
@@ -168,6 +186,7 @@ export function useProgress() {
     stats,
     recordAnswer,
     getSmartReviewQuestions,
+    getWeakAndUnseenQuestions,
     clearProgress,
     domainLabels: DOMAIN_LABELS,
   };
