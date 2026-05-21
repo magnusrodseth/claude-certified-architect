@@ -3359,7 +3359,7 @@ export const questions: Question[] = [
   },
   {
     id: "d1-104",
-    source: "ai-generated",
+    source: "exam-guide",
     domain: "agentic-architecture",
     scenario: "customer-support",
     question:
@@ -3728,7 +3728,7 @@ export const questions: Question[] = [
   },
   {
     id: "d2-094",
-    source: "ai-generated",
+    source: "exam-guide",
     domain: "tool-design-mcp",
     scenario: "customer-support",
     question:
@@ -4087,7 +4087,7 @@ export const questions: Question[] = [
   },
   {
     id: "d3-060",
-    source: "ai-generated",
+    source: "exam-guide",
     domain: "claude-code-config",
     scenario: "code-generation",
     question:

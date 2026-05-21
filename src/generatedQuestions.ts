@@ -341,4 +341,123 @@ export const generatedQuestions: Question[] = [
     explanation:
       "This AI-generated practice question tests decision memory. Useful summaries preserve not only conclusions, but also rejected alternatives and the reasons they were rejected.",
   },
+  {
+    id: "ai-021",
+    source: "ai-generated",
+    domain: "claude-code-config",
+    scenario: "developer-productivity",
+    question:
+      "Your team's `.claude/rules/api-security.md` contains security guidance that only matters when Claude is editing API handler code. Right now the file loads into every session and inflates context for unrelated tasks. What is the correct fix?",
+    options: [
+      "Move the file into `~/.claude/rules/` so it only loads when API work happens in this repo.",
+      "Rename it to `api-security.local.md` so Claude only loads it on demand from a subdirectory.",
+      "Add a `paths: [\"src/api/**/*.ts\"]` frontmatter block so the rule only loads when matching files are read.",
+      "Add an `<!-- only:api -->` HTML comment to the top of the file so Claude scopes it automatically.",
+    ],
+    correctIndex: 2,
+    explanation:
+      "This AI-generated practice question tests path-scoped rules. Rules without `paths` frontmatter load unconditionally at launch. Adding `paths:` with glob patterns makes the rule conditional, so it only enters context when Claude reads files matching the patterns. `~/.claude/rules/` is user-level and still loads unconditionally for every project. `.local.md` is a CLAUDE.md naming convention, not a rules-scoping mechanism. HTML comments are stripped, not interpreted as scoping directives.",
+  },
+  {
+    id: "ai-022",
+    source: "ai-generated",
+    domain: "claude-code-config",
+    scenario: "developer-productivity",
+    question:
+      "Your personal `~/.claude/rules/preferences.md` says to use tabs for indentation. The current project's `.claude/rules/code-style.md` says to use 2-space indentation. Which rule wins when Claude formats code in this project?",
+    options: [
+      "The user rule, since user-level rules load last and therefore override project rules.",
+      "The project rule, since user-level rules load first and project rules have higher priority.",
+      "Neither: Claude detects the conflict and pauses to ask which convention to follow.",
+      "Whichever file was most recently modified, since Claude prefers fresher instructions.",
+    ],
+    correctIndex: 1,
+    explanation:
+      "This AI-generated practice question tests rule precedence. User-level rules in `~/.claude/rules/` are loaded before project rules, which gives project rules higher priority. Claude does not detect conflicts or arbitrate by file mtime; conflicts between instructions can lead to arbitrary behavior, so contradictions should be removed from your CLAUDE.md and rules files.",
+  },
+  {
+    id: "ai-023",
+    source: "ai-generated",
+    domain: "claude-code-config",
+    scenario: "developer-productivity",
+    question:
+      "You want Claude to always know the build command (`pnpm build`) for your project across sessions. Comparing CLAUDE.md vs auto memory, which placement is most reliable?",
+    options: [
+      "Put it in CLAUDE.md, which is loaded in full at the start of every session.",
+      "Rely on auto memory to save the command after Claude observes it being used.",
+      "Write it as an HTML comment in CLAUDE.md so it persists without spending tokens.",
+      "Store it in `MEMORY.md` past line 200 so it loads only when actually needed.",
+    ],
+    correctIndex: 0,
+    explanation:
+      "This AI-generated practice question tests CLAUDE.md vs auto memory. CLAUDE.md files are loaded in full into every session, regardless of length. Only the first 200 lines or 25KB of `MEMORY.md` load at session start, and content past that threshold is not loaded. HTML comments are stripped before injection, so they cannot communicate facts to Claude. Auto memory is opportunistic and not guaranteed to capture or retain a specific fact.",
+  },
+  {
+    id: "ai-024",
+    source: "ai-generated",
+    domain: "claude-code-config",
+    scenario: "developer-productivity",
+    question:
+      "You work in a large monorepo where ancestor `CLAUDE.md` files from other teams keep loading into your session and bloating context with irrelevant rules. What is the right way to stop this?",
+    options: [
+      "Delete the unrelated CLAUDE.md files from the other teams' directories.",
+      "Add `<!-- ignore -->` block comments to the unwanted CLAUDE.md files so Claude skips them.",
+      "Add `claudeMdExcludes` patterns to `.claude/settings.local.json` matching the unwanted paths.",
+      "Run Claude with `--no-claude-md` to disable directory-walk loading for ancestor files.",
+    ],
+    correctIndex: 2,
+    explanation:
+      "This AI-generated practice question tests monorepo hygiene. `claudeMdExcludes` accepts glob patterns matched against absolute paths and is the supported way to skip ancestor CLAUDE.md files. Settings layers (user, project, local, managed) merge their arrays. Deleting other teams' files is hostile and HTML comments only strip block-level content from a loaded file, not the file itself. There is no `--no-claude-md` flag.",
+  },
+  {
+    id: "ai-025",
+    source: "ai-generated",
+    domain: "claude-code-config",
+    scenario: "code-generation",
+    question:
+      "You want a rule to apply only to React components anywhere under `src/components/` and to integration tests under `tests/integration/`. Which `paths:` frontmatter value is correct?",
+    options: [
+      "`[\"src/components/*.tsx\", \"tests/integration/*.ts\"]`",
+      "`[\"src/components/**/*.tsx\", \"tests/integration/**/*.ts\"]`",
+      "`[\"**/components/\", \"**/integration/\"]`",
+      "`[\"src/components\", \"tests/integration\"]`",
+    ],
+    correctIndex: 1,
+    explanation:
+      "This AI-generated practice question tests glob syntax in path-scoped rules. `**` matches any depth of directories, and `*.tsx` matches the file extension, so `src/components/**/*.tsx` covers components at any nesting. Single `*` does not recurse into subdirectories. Bare directory names (with or without trailing slashes) do not match individual files. Glob patterns must end with a filename or extension pattern, not a directory.",
+  },
+  {
+    id: "ai-026",
+    source: "ai-generated",
+    domain: "claude-code-config",
+    scenario: "developer-productivity",
+    question:
+      "Your repo already uses `AGENTS.md` for another coding tool, and you want Claude Code to honor those same instructions without duplicating content. What is the recommended approach?",
+    options: [
+      "Create a `CLAUDE.md` that contains a single line: `@AGENTS.md` to import its content.",
+      "Rename `AGENTS.md` to `CLAUDE.md` and stop maintaining the other agent's config.",
+      "Copy the `AGENTS.md` content verbatim into `CLAUDE.md` so each tool reads its own file.",
+      "Set `claudeMd` in managed-settings.json to the absolute path of `AGENTS.md`.",
+    ],
+    correctIndex: 0,
+    explanation:
+      "This AI-generated practice question tests AGENTS.md compatibility. Claude Code only reads CLAUDE.md, but the `@path` import syntax lets a CLAUDE.md include AGENTS.md so both agents read the same source of truth. A symlink works too on Unix. Renaming breaks the other agent, copying duplicates content that will drift, and `claudeMd` in managed settings stores inline content, not a file path.",
+  },
+  {
+    id: "ai-027",
+    source: "ai-generated",
+    domain: "claude-code-config",
+    scenario: "developer-productivity",
+    question:
+      "Your security team needs to guarantee Claude never reads files from `/etc/secrets/`. They debate whether to put this in a managed `CLAUDE.md` or in managed settings. Which approach is correct?",
+    options: [
+      "Use `permissions.deny` in managed settings, since CLAUDE.md is behavioral context, not hard enforcement.",
+      "Use a managed CLAUDE.md instruction, since managed CLAUDE.md loads before user and project files.",
+      "Use both, since redundant enforcement at multiple layers is safer for security policy.",
+      "Use a managed CLAUDE.md and disable auto memory, so no instruction can ever be overridden.",
+    ],
+    correctIndex: 0,
+    explanation:
+      "This AI-generated practice question tests the separation between behavioral guidance and technical enforcement. Managed settings rules like `permissions.deny` are enforced by the Claude Code client regardless of model behavior, so they are appropriate for security policy. CLAUDE.md shapes behavior but is not an enforcement layer: a model can still attempt to read the path. Layering both does not strengthen enforcement beyond what the deny rule already provides.",
+  },
 ];
