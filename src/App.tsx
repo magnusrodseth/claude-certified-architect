@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
+import { Timer } from "lucide-react";
 import { Routes, Route, useNavigate, Navigate } from "react-router-dom";
 import "./App.css";
 import { useQuiz } from "./hooks/useQuiz";
@@ -50,7 +51,7 @@ function Stopwatch({ startedAt }: { startedAt: number }) {
       title={revealed ? "Hide elapsed time" : "Show elapsed time"}
     >
       <span className="stopwatch-icon" aria-hidden="true">
-        ⏱
+        <Timer size={16} strokeWidth={2} />
       </span>
       <motion.span
         className="stopwatch-time"
