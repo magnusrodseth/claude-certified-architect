@@ -1758,16 +1758,16 @@ export const questions: Question[] = [
     id: "d4-062",
     domain: "prompt-engineering",
     question:
-      "What are the three types of graders used in prompt evaluation pipelines?",
+      "In a prompt evaluation pipeline, graders are categorized by who or what performs the evaluation of a model's output. What are the three grader types along that axis?",
     options: [
-      "Fast graders, Medium graders, and Slow graders based on speed tier",
-      "Code graders (programmatic), Model graders (LLM), Human graders",
-      "Input graders, Output graders, and Format graders in the pipeline",
-      "Binary graders, Scale graders, and Rubric graders for scoring types",
+      "Fast graders, Medium graders, and Slow graders, categorized by latency tier.",
+      "Code graders (a deterministic program), Model graders (another LLM), and Human graders (a person).",
+      "Input graders, Output graders, and Format graders, categorized by pipeline stage.",
+      "Binary graders, Scale graders, and Rubric graders, categorized by scoring format.",
     ],
     correctIndex: 1,
     explanation:
-      "The three grader types are: Code graders (programmatic checks like syntax validation, length, keyword presence), Model graders (additional LLM call to evaluate quality/instruction-following), and Human graders (manual evaluation, most flexible but time-consuming).",
+      "The taxonomy is about who or what produces the score: code (a deterministic program checks the output), a model (another LLM call judges quality), or a human (a person rates it). Each has a trade-off: code is cheap and reliable but rigid (only checks what you can express programmatically); model graders are flexible and cheap-ish but noisy (LLMs disagree with themselves); humans are the most flexible and trustworthy but slow and expensive. Real eval pipelines layer them: code on every output, models on a sample, humans spot-checking the model graders.\n\nThe distractors each describe a valid evaluation axis that is NOT 'who grades'. Binary / Scale / Rubric is the trickiest because those are real concepts, but they describe the SCORING FORMAT (a code grader can output binary OR a 1 to 5 scale; a model grader can use a rubric), not the grader type. Fast / Medium / Slow describes a PROPERTY of graders (code is fast, humans are slow), not a category. Input / Output / Format graders is invented pipeline-sounding language; graders by definition evaluate outputs.\n\nExam recognition pattern: if a question lists categories and one option is about who does the work (code / model / human), that is almost always the 'grader types' answer. Other options that sound parallel but live at a different level of abstraction (scoring shape, latency, pipeline stage) are distractors.",
   },
   {
     id: "d4-063",
@@ -1960,6 +1960,7 @@ export const questions: Question[] = [
   {
     id: "d4-070",
     domain: "prompt-engineering",
+    scenario: "ai-fluency",
     question:
       "What are the '4 Ds' of AI Fluency?",
     options: [
@@ -1975,6 +1976,7 @@ export const questions: Question[] = [
   {
     id: "d4-071",
     domain: "prompt-engineering",
+    scenario: "ai-fluency",
     question:
       "What are the three Human-AI Interaction Modes?",
     options: [
@@ -1990,6 +1992,7 @@ export const questions: Question[] = [
   {
     id: "d4-072",
     domain: "prompt-engineering",
+    scenario: "ai-fluency",
     question:
       "In the AI Fluency framework, what does 'Product Discernment' mean?",
     options: [
@@ -2116,6 +2119,7 @@ export const questions: Question[] = [
   {
     id: "d4-074",
     domain: "prompt-engineering",
+    scenario: "ai-fluency",
     question:
       "In the AI Fluency framework, what does 'Deployment Diligence' mean?",
     options: [
@@ -2127,6 +2131,38 @@ export const questions: Question[] = [
     correctIndex: 1,
     explanation:
       "Deployment Diligence means taking responsibility for verifying and vouching for AI-assisted outputs before using or sharing them. It sits alongside Creation Diligence (thoughtful AI system choices) and Transparency Diligence (being honest about AI's role in your work).",
+  },
+  {
+    id: "d4-075",
+    domain: "prompt-engineering",
+    scenario: "ai-fluency",
+    question:
+      "In the AI Fluency framework's 4 Ds (Delegation, Description, Discernment, Diligence), what does 'Delegation' mean?",
+    options: [
+      "Letting Claude pick which tool to call based on the user's request automatically.",
+      "Outsourcing all repetitive engineering tasks to AI to maximize developer leverage.",
+      "Deciding what work to hand to AI, what to keep yourself, and how to scope tasks.",
+      "Granting specific permission roles to different AI agents within a workflow.",
+    ],
+    correctIndex: 2,
+    explanation:
+      "Delegation in the AI Fluency framework is about deciding which tasks to hand to AI, which to do yourself, and how to distribute work between humans and AI. It is the goal-setting and task-scoping step that precedes Description (writing the prompt), Discernment (evaluating output), and Diligence (taking responsibility for the final result). It is not about runtime tool routing, blanket outsourcing, or agent permissions.",
+  },
+  {
+    id: "d4-076",
+    domain: "prompt-engineering",
+    scenario: "ai-fluency",
+    question:
+      "In the AI Fluency framework's 4 Ds, what does 'Description' mean?",
+    options: [
+      "Translating goals into clear prompts that guide the AI to produce useful outputs.",
+      "Adding inline comments to AI-generated code so future readers can follow it.",
+      "Describing the AI's capabilities to stakeholders to set realistic expectations.",
+      "Repeating the user's request back verbatim to confirm task understanding.",
+    ],
+    correctIndex: 0,
+    explanation:
+      "Description is about communicating effectively with AI: translating your goals and intent into clear, well-scoped prompts that guide the model toward useful output. It pairs with Delegation (deciding what to ask for) and feeds into Discernment (evaluating what comes back). Code comments, stakeholder communication, and request paraphrasing are unrelated activities.",
   },
   // ============================================================
   // Skilljar-style questions (from course quizzes)

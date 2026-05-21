@@ -23,7 +23,8 @@ export type Scenario =
   | "developer-productivity"
   | "ci-cd"
   | "structured-data"
-  | "conversational-architecture";
+  | "conversational-architecture"
+  | "ai-fluency";
 
 export const DOMAIN_LABELS: Record<Domain, string> = {
   "agentic-architecture": "Domain 1: Agentic Architecture & Orchestration",
@@ -49,6 +50,7 @@ export const SCENARIO_LABELS: Record<Scenario, string> = {
   "ci-cd": "Claude Code for CI/CD",
   "structured-data": "Structured Data Extraction",
   "conversational-architecture": "Conversational AI Architecture Patterns",
+  "ai-fluency": "AI Fluency Framework",
 };
 
 export interface ShuffledQuestion extends Question {

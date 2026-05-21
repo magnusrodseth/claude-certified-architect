@@ -264,6 +264,7 @@ function HomeScreen({
                 <span className="legend-dot seen" /> Seen
               </span>
             </div>
+            <CopyProgressForAI stats={stats} history={history} />
           </div>
         </section>
 
@@ -719,6 +720,138 @@ function CopyForAI({
           answer, and the explanation, plus a prompt asking an AI assistant
           to explain the nuance. Paste it into Claude or any AI chat to dig
           deeper.
+        </p>
+      )}
+    </div>
+  );
+}
+
+// Reads the user's overall progress from localStorage state and produces a
+// markdown digest the user can paste into Claude to get personalized study
+// recommendations. Mirrors the question-level CopyForAI button.
+function CopyProgressForAI({
+  stats,
+  history,
+}: {
+  stats: ReturnType<typeof useProgress>["stats"];
+  history: ReturnType<typeof useQuiz>["history"];
+}) {
+  const [copied, setCopied] = useState(false);
+  const [helpOpen, setHelpOpen] = useState(false);
+
+  const buildPrompt = () => {
+    const pct = (n: number, d: number) =>
+      d > 0 ? `${Math.round((n / d) * 100)}%` : "n/a";
+
+    const overall = [
+      `- Total questions in bank: ${stats.totalQuestions}`,
+      `- Seen: ${stats.seen} (${pct(stats.seen, stats.totalQuestions)})`,
+      `- Mastered (2+ correct streak): ${stats.mastered} (${pct(stats.mastered, stats.totalQuestions)})`,
+      `- Weak (wrong on last attempt): ${stats.weak}`,
+      `- Unseen: ${stats.unseen}`,
+      `- Current day streak: ${stats.streakDays}`,
+      `- Total study days: ${stats.totalStudyDays}`,
+    ].join("\n");
+
+    const domains = (Object.keys(DOMAIN_LABELS) as Domain[])
+      .map((d) => {
+        const ds = stats.domainStats[d];
+        return `- ${DOMAIN_LABELS[d]} (exam weight ${DOMAIN_WEIGHTS[d]}%): mastered ${ds.mastered}/${ds.total} (${pct(ds.mastered, ds.total)}), seen ${ds.seen}/${ds.total}, weak ${ds.weak}`;
+      })
+      .join("\n");
+
+    const recent = [...history]
+      .reverse()
+      .slice(0, 10)
+      .map((h) => {
+        const date = new Date(h.date).toISOString().slice(0, 10);
+        const score = pct(h.correct, h.total);
+        return `- ${date} | ${h.mode} | ${score} (${h.correct}/${h.total})`;
+      })
+      .join("\n");
+
+    const recentBlock =
+      recent.length > 0 ? recent : "- (no completed sessions yet)";
+
+    return [
+      "I am preparing for the Claude Certified Architect: Foundations exam using a practice quiz app, and I want you to act as a study coach. Based on the progress snapshot below, please:",
+      "1. Identify the two or three biggest gaps I should close first, with reasoning grounded in the data.",
+      "2. Call out patterns you see across domains and sessions (e.g. stalling mastery, dropping cadence, weak areas with high exam weight).",
+      "3. Propose a concrete 7-day study plan that uses Smart Review, weighted practice, and weak-domain drills in the right proportion.",
+      "Passing threshold on the real exam is 72%. Domain weights matter: prioritize gaps in heavily weighted domains.",
+      "",
+      "Overall stats:",
+      overall,
+      "",
+      "Per-domain breakdown:",
+      domains,
+      "",
+      "Recent sessions (most recent first, up to 10):",
+      recentBlock,
+    ].join("\n");
+  };
+
+  const onCopy = async () => {
+    const text = buildPrompt();
+    try {
+      await navigator.clipboard.writeText(text);
+    } catch {
+      const ta = document.createElement("textarea");
+      ta.value = text;
+      ta.style.position = "fixed";
+      ta.style.opacity = "0";
+      document.body.appendChild(ta);
+      ta.select();
+      try {
+        document.execCommand("copy");
+      } finally {
+        document.body.removeChild(ta);
+      }
+    }
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  return (
+    <div className="ai-help-row">
+      <motion.button
+        type="button"
+        className={`btn copy-ai-btn ${copied ? "copied" : ""}`}
+        onClick={onCopy}
+        whileTap={{ scale: 0.96 }}
+        animate={copied ? { scale: [1, 1.06, 1] } : { scale: 1 }}
+        transition={{ duration: 0.28, ease: "easeOut" }}
+      >
+        <AnimatePresence mode="wait" initial={false}>
+          <motion.span
+            key={copied ? "copied" : "idle"}
+            className="copy-ai-label"
+            initial={{ opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -6 }}
+            transition={{ duration: 0.18, ease: "easeOut" }}
+          >
+            {copied ? "✓ Copied to clipboard" : "Export progress for AI coach"}
+          </motion.span>
+        </AnimatePresence>
+      </motion.button>
+      <button
+        type="button"
+        className="ai-help-toggle"
+        aria-label="What does Export progress for AI coach do?"
+        aria-expanded={helpOpen}
+        onClick={() => setHelpOpen((v) => !v)}
+      >
+        ?
+      </button>
+      {helpOpen && (
+        <p className="ai-help-text" role="note">
+          Copies a markdown snapshot of your overall progress: total seen vs
+          mastered vs weak, per-domain mastery weighted by official exam
+          percentages, study streak, and your last 10 sessions. Paste it into
+          Claude or any AI chat and ask it to act as a study coach. All data
+          comes from your local browser state; nothing leaves your machine
+          until you paste.
         </p>
       )}
     </div>
