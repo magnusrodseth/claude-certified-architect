@@ -901,6 +901,17 @@ function QuizScreen({
     window.scrollTo({ top: 0, behavior: "smooth" });
   }, [questionId]);
 
+  useEffect(() => {
+    if (!showResult) return;
+    const id = window.setTimeout(() => {
+      window.scrollTo({
+        top: document.documentElement.scrollHeight,
+        behavior: "smooth",
+      });
+    }, 50);
+    return () => window.clearTimeout(id);
+  }, [showResult, questionId]);
+
   if (!currentQuestion) return null;
 
   const progress = state.currentQuestionIndex + 1;
