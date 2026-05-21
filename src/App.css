@@ -271,6 +271,7 @@ h1 {
   font-family: var(--font-mono);
   font-size: 0.9rem;
   color: var(--text-muted);
+  white-space: nowrap;
 }
 
 .domain-tag {
@@ -1157,6 +1158,16 @@ h1 {
     margin-left: 0;
     width: 100%;
     justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+  }
+
+  .quiz-meta .domain-tag {
+    order: 1;
+    flex-basis: 100%;
+    font-size: 0.7rem;
+    padding: 0.25rem 0.6rem;
+    text-align: center;
   }
 
   h1 {

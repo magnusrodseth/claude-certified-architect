@@ -460,4 +460,123 @@ export const generatedQuestions: Question[] = [
     explanation:
       "This AI-generated practice question tests the separation between behavioral guidance and technical enforcement. Managed settings rules like `permissions.deny` are enforced by the Claude Code client regardless of model behavior, so they are appropriate for security policy. CLAUDE.md shapes behavior but is not an enforcement layer: a model can still attempt to read the path. Layering both does not strengthen enforcement beyond what the deny rule already provides.",
   },
+  {
+    id: "ai-028",
+    source: "ai-generated",
+    domain: "prompt-engineering",
+    scenario: "structured-data",
+    question:
+      "Your team added one few-shot example to a classification prompt and accuracy improved slightly. The lead engineer argues for adding 15 more examples to maximize pattern coverage. Another suggests dropping back to zero-shot. What does Anthropic's documented guidance recommend?",
+    options: [
+      "Include 3 to 5 examples; this is the documented sweet spot for few-shot prompting.",
+      "Use exactly 1 example so the model does not overfit to a demonstrated style.",
+      "Use 10 or more examples; more examples always reduce ambiguity for the model.",
+      "Skip examples and instead expand the system-prompt instructions in detail.",
+    ],
+    correctIndex: 0,
+    explanation:
+      "This AI-generated practice question tests few-shot dosage. Anthropic's prompt-engineering best practices explicitly recommend 3 to 5 examples for best results. Fewer tend to miss edge cases; many more waste tokens and can over-anchor on incidental patterns. Examples are also more reliable than longer instructions for steering output format, tone, and structure.",
+  },
+  {
+    id: "ai-029",
+    source: "ai-generated",
+    domain: "prompt-engineering",
+    scenario: "conversational-architecture",
+    question:
+      "A sentiment classifier uses 5 few-shot examples, all short English product reviews around 20 words with neutral tone. In production it misclassifies long reviews, non-English inputs, and sarcasm. Which Anthropic-documented principle was violated, and how do you fix it?",
+    options: [
+      "Uniformity: tighten the examples further so Claude locks onto a single consistent pattern.",
+      "Quantity: drop to 1 or 2 examples so Claude leans on its base capabilities instead.",
+      "Diversity: vary examples to cover edge cases like length, language, and sarcasm.",
+      "Structure: wrap each example in `<example>` tags so the parser can split them.",
+    ],
+    correctIndex: 2,
+    explanation:
+      "This AI-generated practice question tests the diversity principle. Anthropic's guidance is that examples must be diverse enough that Claude does not pick up unintended patterns from a narrow set. Uniform examples cause exactly the failure described: the model latches onto incidental traits (English, short, neutral) instead of the underlying task. Reducing count or adding tags does not address the root cause.",
+  },
+  {
+    id: "ai-030",
+    source: "ai-generated",
+    domain: "prompt-engineering",
+    scenario: "developer-productivity",
+    question:
+      "You embed 4 few-shot examples in a long prompt that already contains role instructions, context, and the user's query. The model sometimes confuses your examples for actual instructions or treats instructions as content. What is the documented structural fix?",
+    options: [
+      "Add a sentence stating 'The following are examples, not instructions' before listing them.",
+      "Wrap each example in `<example>` tags, all enclosed inside a single `<examples>` block.",
+      "Move every example into the system prompt so it is processed before user content.",
+      "Collapse to one very detailed example so the model cannot confuse it with instructions.",
+    ],
+    correctIndex: 1,
+    explanation:
+      "This AI-generated practice question tests the structure principle. Anthropic recommends wrapping individual examples in `<example>` tags and grouping them inside `<examples>` so Claude can unambiguously distinguish them from instructions and other prompt sections. XML tags are the documented mechanism. A natural-language disclaimer is weaker, moving content to system prompts does not solve the parsing problem, and collapsing to one example sacrifices diversity.",
+  },
+  {
+    id: "ai-031",
+    source: "ai-generated",
+    domain: "prompt-engineering",
+    scenario: "customer-support",
+    question:
+      "A customer-service prompt uses 5 few-shot examples drawn from a public movie-review dataset because that data was readily available. The examples are well-formed and properly tagged, yet production accuracy on real support tickets is poor. Which best-practice principle is violated?",
+    options: [
+      "Diversity: movie reviews vary widely but not in the dimensions that matter here.",
+      "Quantity: 5 examples is too few for a domain with this much variability.",
+      "Relevance: examples must mirror the actual use case closely, not a tangential domain.",
+      "Structure: review datasets typically lack the XML tagging Claude expects.",
+    ],
+    correctIndex: 2,
+    explanation:
+      "This AI-generated practice question tests the relevance principle. Anthropic's guidance states examples should mirror your actual use case closely. Movie reviews share surface format with support tickets but differ in intent, vocabulary, and expected response shape, which is what determines whether examples transfer. Diversity, quantity, and tagging are separate principles and would not rescue irrelevant examples.",
+  },
+  {
+    id: "ai-032",
+    source: "ai-generated",
+    domain: "prompt-engineering",
+    scenario: "multi-agent-research",
+    question:
+      "You are using extended thinking with Claude and want few-shot examples to demonstrate not just the final answer format but also the reasoning pattern Claude should follow when it thinks. How should the examples be structured?",
+    options: [
+      "Include `<thinking>` tags inside each example, showing the reasoning trace before the final answer.",
+      "Strip reasoning from examples entirely; extended thinking will generate its own pattern independently.",
+      "Add a single dedicated example containing only reasoning and no final answer.",
+      "Replace `<example>` tags with `<thinking>` tags so the model interprets the whole prompt as reasoning.",
+    ],
+    correctIndex: 0,
+    explanation:
+      "This AI-generated practice question tests the interaction between few-shot prompting and extended thinking. Anthropic's guidance is that multishot examples work with thinking: use `<thinking>` tags inside your few-shot examples to demonstrate the reasoning pattern, and Claude will generalize that style to its own extended thinking blocks. Stripping reasoning loses the demonstration; replacing example tags destroys the structural distinction between examples and instructions.",
+  },
+  {
+    id: "ai-033",
+    source: "ai-generated",
+    domain: "prompt-engineering",
+    scenario: "code-generation",
+    question:
+      "You add 4 few-shot examples to a code-comment generation prompt. The model now matches the example style perfectly, but accuracy on what the code actually does has dropped. What is the most likely cause and the correct fix?",
+    options: [
+      "Too many examples; Claude is pattern-matching the surface. Drop to a single example to reduce anchoring.",
+      "Uniform examples are reinforcing surface patterns at the expense of the task. Diversify examples across varied code shapes and comment styles.",
+      "Examples always degrade task accuracy on technical tasks; remove them and rely solely on system-prompt instructions.",
+      "The XML tags are wrong; switch from `<example>` to `<code>` tags so the model understands the content type.",
+    ],
+    correctIndex: 1,
+    explanation:
+      "This AI-generated practice question tests the uniformity failure mode. Anthropic's diversity principle warns that narrow examples cause Claude to pick up unintended patterns. The described symptom (style match, semantic accuracy drop) is the classic signature of over-anchoring on incidental surface features. The fix is to diversify the examples across the dimensions that actually vary in production, not to delete them or relabel the tags.",
+  },
+  {
+    id: "ai-034",
+    source: "ai-generated",
+    domain: "prompt-engineering",
+    scenario: "developer-productivity",
+    question:
+      "You have 2 carefully crafted few-shot examples but writing each by hand takes significant effort. You want to expand to the documented sweet spot of 3 to 5. What does Anthropic explicitly suggest as a practical next step before adding more examples manually?",
+    options: [
+      "Ask Claude itself to evaluate your existing examples for relevance and diversity, or to generate additional examples based on your initial set.",
+      "Use a smaller and cheaper model to generate candidate examples, then validate them against Claude before deploying.",
+      "Translate your existing examples into other languages and back to multiply the example count cheaply.",
+      "Run each example through a separate validation prompt to filter duplicates and surface gaps.",
+    ],
+    correctIndex: 0,
+    explanation:
+      "This AI-generated practice question tests a less-known piece of Anthropic's documented guidance: you can ask Claude itself to evaluate your examples for relevance and diversity, or to generate additional ones based on your initial set. This is the documented practical step. The other options are reasonable workflow ideas but are not what the best-practices doc recommends, and translation tricks specifically risk violating the relevance principle.",
+  },
 ];

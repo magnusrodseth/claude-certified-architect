@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { Routes, Route, useNavigate, Navigate } from "react-router-dom";
 import "./App.css";
@@ -734,6 +734,12 @@ function QuizScreen({
   toggleFlag,
   goHome,
 }: QuizScreenProps) {
+  const questionId = currentQuestion?.id;
+  useEffect(() => {
+    if (!questionId) return;
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }, [questionId]);
+
   if (!currentQuestion) return null;
 
   const progress = state.currentQuestionIndex + 1;
