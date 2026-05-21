@@ -275,6 +275,8 @@ h1 {
 }
 
 .stopwatch {
+  display: inline-flex;
+  align-items: center;
   font-family: var(--font-mono);
   font-size: 0.9rem;
   color: var(--accent);
@@ -283,6 +285,23 @@ h1 {
   border-radius: 99px;
   white-space: nowrap;
   font-variant-numeric: tabular-nums;
+  cursor: pointer;
+  user-select: none;
+  outline: none;
+}
+
+.stopwatch:focus-visible {
+  box-shadow: 0 0 0 2px var(--accent);
+}
+
+.stopwatch-icon {
+  line-height: 1;
+}
+
+.stopwatch-time {
+  display: inline-block;
+  overflow: hidden;
+  white-space: nowrap;
 }
 
 .quiz-prefs {

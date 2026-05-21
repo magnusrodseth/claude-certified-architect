@@ -30,14 +30,42 @@ function formatDuration(ms: number): string {
 
 function Stopwatch({ startedAt }: { startedAt: number }) {
   const [now, setNow] = useState(() => Date.now());
+  const [revealed, setRevealed] = useState(false);
   useEffect(() => {
     const id = window.setInterval(() => setNow(Date.now()), 1000);
     return () => window.clearInterval(id);
   }, []);
+  const elapsed = formatDuration(now - startedAt);
   return (
-    <span className="stopwatch" title="Elapsed time" aria-live="off">
-      ⏱ {formatDuration(now - startedAt)}
-    </span>
+    <motion.span
+      className="stopwatch"
+      onHoverStart={() => setRevealed(true)}
+      onHoverEnd={() => setRevealed(false)}
+      onFocus={() => setRevealed(true)}
+      onBlur={() => setRevealed(false)}
+      onClick={() => setRevealed((v) => !v)}
+      tabIndex={0}
+      role="timer"
+      aria-label={`Elapsed time ${elapsed}`}
+      title={revealed ? "Hide elapsed time" : "Show elapsed time"}
+    >
+      <span className="stopwatch-icon" aria-hidden="true">
+        ⏱
+      </span>
+      <motion.span
+        className="stopwatch-time"
+        initial={false}
+        animate={{
+          maxWidth: revealed ? 96 : 0,
+          opacity: revealed ? 1 : 0,
+          marginLeft: revealed ? 6 : 0,
+        }}
+        transition={{ duration: 0.22, ease: [0.2, 0.7, 0.2, 1] }}
+        aria-hidden={!revealed}
+      >
+        {elapsed}
+      </motion.span>
+    </motion.span>
   );
 }
 
