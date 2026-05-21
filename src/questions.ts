@@ -2137,7 +2137,7 @@ export const questions: Question[] = [
     domain: "prompt-engineering",
     scenario: "ai-fluency",
     question:
-      "In the AI Fluency framework's 4 Ds (Delegation, Description, Discernment, Diligence), what does 'Delegation' mean?",
+      "In the AI Fluency framework's 4 Ds, what does 'Delegation' mean?",
     options: [
       "Letting Claude pick which tool to call based on the user's request automatically.",
       "Outsourcing all repetitive engineering tasks to AI to maximize developer leverage.",
